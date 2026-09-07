@@ -36,7 +36,7 @@ function dstates=dyn(states,commands,params)
     Jyy     = params(6);
     Jzz     = params(7);
     J       = diag([Jxx Jyy Jzz]); % Matrice d'inertie
-    Jr      = params(8)
+    Jr      = params(8);
     g       = 9.81;
     
     % Matrice de transition du repère du quadroptere dans le repere
