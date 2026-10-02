@@ -1,17 +1,14 @@
-function dstates=dyn(states,commands,params)
+function dXdt=dyn(X,U,params)
     % Etats
-    x       = states(1);
-    y       = states(2);
-    z       = states(3);
-    vx      = states(4);
-    vy      = states(5);
-    vz      = states(6);
-    phi     = states(7);
-    theta   = states(8);
-    psi     = states(9);
-    p       = states(10);
-    q       = states(11);
-    r       = states(12);
+    vx      = X(4);
+    vy      = X(5);
+    vz      = X(6);
+    phi     = X(7);
+    theta   = X(8);
+    psi     = X(9);
+    p       = X(10);
+    q       = X(11);
+    r       = X(12);
     
     cphi    = cos(phi);
     sphi    = sin(phi);
@@ -22,21 +19,21 @@ function dstates=dyn(states,commands,params)
     spsi    = sin(psi);
     
     % Commandes
-    w1      = commands(1);
-    w2      = commands(2);
-    w3      = commands(3);
-    w4      = commands(4);
+    w1      = U(1);
+    w2      = U(2);
+    w3      = U(3);
+    w4      = U(4);
     
     % Paramètres
-    m       = params(1); % Masse
-    k_T     = params(2); % Coefficient de poussée hélice
-    k_Q     = params(3); % Coefficient de couple de réaction hélice
-    l       = params(4); % distance des hélices au centre de gravité
-    Jxx     = params(5);
-    Jyy     = params(6);
-    Jzz     = params(7);
+    m       = params.m; % Masse
+    k_T     = params.k_T; % Coefficient de poussée hélice
+    k_Q     = params.k_Q; % Coefficient de couple de réaction hélice
+    l       = params.l; % distance des hélices au centre de gravité
+    Jxx     = params.Jxx;
+    Jyy     = params.Jyy;
+    Jzz     = params.Jzz;
     J       = diag([Jxx Jyy Jzz]); % Matrice d'inertie
-    Jr      = params(8);
+    %Jr      = params.Jr;
     g       = 9.81;
     
     % Matrice de transition du repère du quadroptere dans le repere
@@ -60,10 +57,11 @@ function dstates=dyn(states,commands,params)
     Gpsi    = k_Q*(w1^2 - w2^2 + w3^2 - w4^2);
     
     a       = (1/m)*(R*[0;0;T]-[0;0;m*g]);
-    dw      = J \ (-cross(w, J*w) - Jr*cross(w, [0;0;w1-w2+w3-w4]) + [Gphi; Gtheta; Gpsi]);
+    %dw      = J \ (-cross(w, J*w) - Jr*cross(w, [0;0;w1-w2+w3-w4]) + [Gphi; Gtheta; Gpsi]);
+    dw      = J \ (-cross(w, J*w) + [Gphi; Gtheta; Gpsi]);
 
 
-    dstates = [vx;
+    dXdt    = [vx;
                vy;
                vz;
                a(1);

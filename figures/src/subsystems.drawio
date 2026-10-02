@@ -1,0 +1,67 @@
+<mxfile host="Electron">
+  <diagram name="Page-1" id="ExjPRs-zX2rkyzIT4Z03">
+    <mxGraphModel dx="1414" dy="840" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="1" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="mONYq1gScizq4Bx2HoGc-1" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="419.5" y="120" as="sourcePoint" />
+            <mxPoint x="419.5" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-2" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="\(\omega_{ref,i}\)" vertex="1">
+          <mxGeometry height="30" width="60" x="410" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Duty cycle" vertex="1">
+          <mxGeometry height="40" width="80" x="380" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-4" edge="1" parent="1" source="mONYq1gScizq4Bx2HoGc-3" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="mONYq1gScizq4Bx2HoGc-6" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="470" y="240" as="sourcePoint" />
+            <mxPoint x="520" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-5" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="\(Dc_i\)" vertex="1">
+          <mxGeometry height="30" width="60" x="460" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-9" edge="1" parent="1" source="mONYq1gScizq4Bx2HoGc-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="mONYq1gScizq4Bx2HoGc-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-17" edge="1" parent="1" source="mONYq1gScizq4Bx2HoGc-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="mONYq1gScizq4Bx2HoGc-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="BLDCM&lt;div&gt;Dynamics&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="80" x="520" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Quadropter&lt;div&gt;Dynamics&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="80" x="650" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="\(\omega_i\)" vertex="1">
+          <mxGeometry height="30" width="60" x="590" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-12" edge="1" parent="1" source="mONYq1gScizq4Bx2HoGc-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.25;entryY=1;entryDx=0;entryDy=0;exitX=0.25;exitY=0;exitDx=0;exitDy=0;" target="mONYq1gScizq4Bx2HoGc-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Battery&lt;div&gt;Dynamics&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="80" x="520" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-14" edge="1" parent="1" source="mONYq1gScizq4Bx2HoGc-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="mONYq1gScizq4Bx2HoGc-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Degradation Model" vertex="1">
+          <mxGeometry height="40" width="80" x="400" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-15" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="\(V_{batt}\)" vertex="1">
+          <mxGeometry height="30" width="60" x="490" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-16" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="\(I_{batt}\)" vertex="1">
+          <mxGeometry height="30" width="60" x="550" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="mONYq1gScizq4Bx2HoGc-18" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="\([0;1]\)" vertex="1">
+          <mxGeometry height="30" width="60" x="460" y="180" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
