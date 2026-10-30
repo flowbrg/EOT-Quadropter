@@ -169,7 +169,7 @@ $$
 The third column of $R_b$ gives the direction of the thrust in $E_0$:
 
 $$
-\ddot{\xi} = \frac{1}{m} R_b \begin{bmatrix}0\\0\\U_1\end{bmatrix} - \begin{bmatrix}0\\0\\g\end{bmatrix}
+\ddot{\xi} = \frac{1}{m} R_b \begin{bmatrix}0 \\ 0 \\ U_1 \end{bmatrix} - \begin{bmatrix}0 \\ 0 \\ g \end{bmatrix}
 $$
 
 $$
@@ -204,9 +204,9 @@ The inputs are linear in the squared rotor speeds:
 
 $$
 \begin{aligned}
-U_1 &= k_T(\omega_1^2 + \omega_2^2 + \omega_3^2 + \omega_4^2)\\
-U_2 &= l\,k_T(-\omega_2^2 + \omega_4^2)\\
-U_3 &= l\,k_T(-\omega_1^2 + \omega_3^2)\\
+U_1 &= k_T(\omega_1^2 + \omega_2^2 + \omega_3^2 + \omega_4^2) \\
+U_2 &= l\,k_T(-\omega_2^2 + \omega_4^2) \\
+U_3 &= l\,k_T(-\omega_1^2 + \omega_3^2) \\
 U_4 &= k_Q(\omega_1^2 - \omega_2^2 + \omega_3^2 - \omega_4^2)
 \end{aligned}
 $$
