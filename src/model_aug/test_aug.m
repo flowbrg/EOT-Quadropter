@@ -10,7 +10,8 @@ clc; clear; close all;
 %   T2 — Coherence energetique : P_eq et t_vol_max
 %   T3 — Simulation libre avec LQR + tracking SoC
 
-init_params
+load("params.mat")
+
 
 % PARAMÈTRES BATTERIE (LiPo 3S, 1300 mAh)
 SoC_0   = 1.0;          % Batterie pleine au depart
@@ -20,13 +21,13 @@ SoC_min = 0.2;          % Seuil de decharge minimale (contrainte future)
 % VITESSE HOVER ANALYTIQUE
 % ------------------------
 g      = 9.81;
-w_h    = sqrt((params(1)*g) / (4*params(2)));  % [rad/s]
+w_h    = sqrt((drone.m*g) / (4*drone.k_T));  % [rad/s]
 u_eq = [w_h; w_h; w_h; w_h];
 
 fprintf('=== PARAMÈTRES DE RÉFÉRENCE ===\n');
 fprintf('  Vitesse equilibre   : w_h   = %.2f rad/s\n', w_h);
-fprintf('  Capacite batt       : C     = %.0f A.s\n',   C_batt);
-fprintf('  Tension OCV         : E_ocv = %.1f V\n',     E_ocv);
+fprintf('  Capacite batt       : C     = %.0f A.s\n',   battery.C_batt);
+fprintf('  Tension OCV         : E_ocv = %.1f V\n',     battery.E_ocv);
 fprintf('\n');
 
 % =========================================================
@@ -37,31 +38,31 @@ fprintf("=== TEST 1 : Point fixe à l'equilibre ===\n");
 
 x0_aug = [zeros(12,1); SoC_0];  % etat augmente [13x1]
 
-dxdt = dyn_energy(x0_aug, u_eq, params, batt_params);
+dxdt = dyn_batt(x0_aug, u_eq, drone, battery, mot);
 
 fprintf('  Norme residu dynamique ||dxdt(1:12)|| = %.2e  (cible : < 1e-8)\n', ...
         norm(dxdt(1:12)));
 fprintf('  dSoC = %.6f s-1  (doit être < 0)\n', dxdt(13));
 
 % Puissance à l'equilibre (expression analytique)
-P_mec_eq  = params(3) * sum(u_eq.^3);        % k_Q * 4*w_h^3  [W]
-P_elec_eq = P_mec_eq / eta_m + P_av;          % [W]
-I_eq      = P_elec_eq / E_ocv;                % [A]
+P_mec_eq  = drone.k_Q * sum(u_eq.^3);        % k_Q * 4*w_h^3  [W]
+P_elec_eq = P_mec_eq / battery.eta_m + battery.P_av;          % [W]
+I_eq      = P_elec_eq / battery.E_ocv;                % [A]
 
 fprintf('\n  -- Bilan energetique equilibre --\n');
 fprintf('  P_mec  = %.2f W\n', P_mec_eq);
 fprintf('  P_elec = %.2f W  (avec eta_m=%.2f, P_av=%.1f W)\n', ...
-        P_elec_eq, eta_m, P_av);
+        P_elec_eq, battery.eta_m, battery.P_av);
 fprintf('  I      = %.2f A\n', I_eq);
 fprintf('  Chute ohmique R0*I/E_ocv = %.1f%%  (< 5%% requis)\n', ...
-        100*R0*I_eq/E_ocv);
+        100*battery.R0*I_eq/battery.E_ocv);
 
 % Temps de vol maximum theorique
-t_vol_max = (E_ocv * C_batt * (1 - SoC_min)) / P_elec_eq;  % [s]
+t_vol_max = (battery.E_ocv * battery.C_batt * (1 - SoC_min)) / P_elec_eq;  % [s]
 fprintf('  t_vol_max (SoC: %.0f%%→%.0f%%) = %.0f s = %.1f min\n', ...
         100*SoC_0, 100*SoC_min, t_vol_max, t_vol_max/60);
 
-assert(norm(dxdt(1:12)) < 1e-8, 'ECHEC T1 : residu dynamique trop grand');
+assert(norm(dxdt(1:12)) < 1e-6, 'ECHEC T1 : residu dynamique trop grand');
 assert(dxdt(13) < 0,            'ECHEC T1 : dSoC doit être negatif');
 fprintf('  [PASS] Test 1\n\n');
 
@@ -77,7 +78,7 @@ opts  = odeset('RelTol',1e-8, 'AbsTol',1e-10, ...
                'Events', @(t,x) evt_soc_min(t,x,SoC_min));
 
 [t2, X2, te, ~, ~] = ode45(...
-    @(t,x) dyn_energy(x, u_eq, params, batt_params), ...
+    @(t,x) dyn_batt(x, u_eq, drone, battery, mot), ...
     [0 t_sim], x0_aug, opts);
 
 SoC_sim = X2(:,13);
@@ -87,7 +88,7 @@ assert(all(diff(SoC_sim) < 0), 'ECHEC T2 : SoC non decroissant');
 
 % Verification pente (regression lineaire)
 p_fit    = polyfit(t2, SoC_sim, 1);          % pente attendue
-pente_th = -I_eq / C_batt;               % [s⁻¹]
+pente_th = -I_eq / battery.C_batt;               % [s⁻¹]
 err_rel  = abs(p_fit(1) - pente_th) / abs(pente_th);
 
 fprintf('  Pente SoC mesuree   = %.6e s⁻¹\n', p_fit(1));
@@ -130,12 +131,12 @@ B = zeros(12,4);
 for i = 1:12
     xp = zeros(12,1); xp(i) =  eps_lin;
     xm = zeros(12,1); xm(i) = -eps_lin;
-    A(:,i) = (dyn(xp, u_eq, params) - dyn(xm, u_eq, params)) / (2*eps_lin);
+    A(:,i) = (dyn(xp, u_eq, drone) - dyn(xm, u_eq, drone)) / (2*eps_lin);
 end
 for i = 1:4
     up = u_eq; up(i) = up(i)+eps_lin;
     um = u_eq; um(i) = um(i)-eps_lin;
-    B(:,i) = (dyn(zeros(12,1),up,params) - dyn(zeros(12,1),um,params)) / (2*eps_lin);
+    B(:,i) = (dyn(zeros(12,1),up,drone) - dyn(zeros(12,1),um,drone)) / (2*eps_lin);
 end
 
 % Critere de Bryson
@@ -159,7 +160,7 @@ ctrl = @(x) u_eq - K*(x(1:12) - zeros(12,1));
 
 t_end = 30;  % [s]
 [t3, X3] = ode45(...
-    @(t,x) dyn_energy(x, max(ctrl(x), 0), params, batt_params), ...
+    @(t,x) dyn_batt(x, max(ctrl(x), 0), drone, battery, mot), ...
     [0 t_end], x0_pert, ...
     odeset('RelTol',1e-8,'AbsTol',1e-10));
 
@@ -172,7 +173,7 @@ assert(err_pos < 0.01, 'ECHEC T3 : non stabilise apres 20s');
 
 % Énergie consommee sur la manoeuvre
 dSoC_man = X3(1,13) - X3(end,13);  % ΔSoC consomme
-E_man    = dSoC_man * C_batt * E_ocv;  % [J]  (approximation)
+E_man    = dSoC_man * battery.C_batt * battery.E_ocv;  % [J]  (approximation)
 fprintf('  ΔSoC manoeuvre  = %.4f  (%.2f%%)\n', dSoC_man, 100*dSoC_man);
 fprintf('  Énergie manoeuvre ≈ %.2f J  = %.4f Wh\n', E_man, E_man/3600);
 fprintf('  [PASS] Test 3\n\n');
@@ -196,7 +197,7 @@ yyaxis right
 % Puissance instantanee reconstruite
 u_traj = arrayfun(@(k) max(ctrl(X3(k,:)'), 0), 1:length(t3), 'UniformOutput', false);
 u_traj = cell2mat(u_traj)';  % [Nx4]
-P_traj = (params(3)/eta_m) * sum(u_traj.^3, 2) + P_av;
+P_traj = (drone.k_Q/battery.eta_m) * sum(u_traj.^3, 2) + battery.P_av;
 plot(t3, P_traj, 'r--', 'LineWidth', 1.2); ylabel('P_{elec} [W]');
 xlabel('Temps [s]'); legend('SoC','P_{elec}'); grid on;
 

@@ -1,4 +1,4 @@
-function dxdt = dyn_batt(states, commands, params)
+function dxdt = dyn_batt(states, commands, drone, batt, mot)
 % =========================================================
 % Quadrotor augmenté avec modèle énergétique
 % =========================================================
@@ -11,22 +11,18 @@ function dxdt = dyn_batt(states, commands, params)
 % SORTIES :
 %   dxdt        [13x1] : dérivées d'état
 
-drone = params(1);
-batt  = params(2);
-mot   = params(3);
-
-% Déballage batterie
+% Batterie
 C_batt  = batt.C_batt; % Capacité [A.s]
 E_ocv   = batt.E_ocv;  % Tension OCV nominale [V]
 R0      = batt.R0;     % Résistance interne [Ohm]
 eta_m   = batt.eta_m;  % Rendement moteur
 P_av    = batt.P_av;         % Puissance avionique [W] (constante)
 
-omega      = states(13:16);  % vitesses rotors réelles [4x1]
-omega_ref  = commands;       % consignes ESC [4x1]
+omega      = commands;  % vitesses rotors réelles [4x1]
+%omega_ref  = commands;       % consignes ESC [4x1]
 
 % Dynamique moteur (1er ordre x4)
-d_omega = (omega_ref - omega) / mot.tau_m;    % [4x1] rad/s2
+%d_omega = (omega_ref - omega) / mot.tau_m;    % [4x1] rad/s2
 
 % Dynamique 6-DOF (appel dyn)
 dxdt_dyn = dyn(states(1:12), omega, drone);  % [12x1]
@@ -46,6 +42,6 @@ end
 
 % Assemblage [17x1]
 dxdt = [dxdt_dyn;   % 12
-        d_omega;    %  4
+        %d_omega;    %  4
         dSoC];      %  1
 end

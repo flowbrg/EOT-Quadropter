@@ -1,4 +1,4 @@
-%% test.m
+%% test_base.m
 
 clc; clear; close all;
 
@@ -10,6 +10,7 @@ clc; clear; close all;
 %   T2 — Simulation libre avec LQR
 
 load("params.mat")
+params = drone;
 
 % ------------------------
 % VITESSE HOVER ANALYTIQUE

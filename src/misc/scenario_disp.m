@@ -5,8 +5,8 @@
 
 clear; clc; close all;
 
-load("data/params.mat")
-load("data/scenario.mat")
+load("../data/params.mat")
+load("../data/scenario.mat")
 
 
 n_buildings = scen.n_buildings;

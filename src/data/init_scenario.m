@@ -22,11 +22,11 @@ scen.target_vel = [0, 0, 0];     % [m/s] vitesse finale nulle (atterrissage pos�
 %  hz       : hauteur totale [m]               -> occupe z in [0, hz]
 
 scen.buildings = [
-    10, 8,  3, 4, 12;   % B1 — fin et haut,    bloque la diagonale basse
-    18, 22, 5, 3,  7;   % B2 — large,           centre gauche
-    27, 25, 4, 4, 15;   % B3 — carré très haut, obstacle central (hz max)
-    35, 33, 3, 6,  9;   % B4 — allongé en y,    zone médiane haute
-    43, 41, 5, 5, 11;   % B5 — grand carré,     approche finale
+    10, 10,  3, 4, 12;   % B1 — fin et haut,    bloque la diagonale basse
+    30, 15, 5, 3,  7;   % B2 — large,           centre gauche
+    27, 40, 4, 4, 15;   % B3 — carré très haut, obstacle central (hz max)
+    35, 25, 3, 6,  9;   % B4 — allongé en y,    zone médiane haute
+    10, 25, 5, 5, 11;   % B5 — grand carré,     approche finale
     ];
 
 scen.n_buildings = size(scen.buildings, 1);

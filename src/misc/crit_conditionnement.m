@@ -2,7 +2,7 @@
 % Conditionnement du critère à minimiser
 clc; clear; close all;
 
-load("data/params.mat")
+load("../data/params.mat")
 
 w_h      = sqrt(drone.m*9.81/(4*drone.k_T))  % hover [rad/s]
 w_max    = 2*w_h;                   % hypothèse : a remplacer
