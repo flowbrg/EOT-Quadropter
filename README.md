@@ -222,7 +222,12 @@ $$
 In matrix form, $U=M\,[\omega_1^2,\dots,\omega_4^2]^\top$ with
 
 $$
-M=\begin{bmatrix} k_T&k_T&k_T&k_T\\ 0&-lk_T&0&lk_T\\ -lk_T&0&lk_T&0\\ k_Q&-k_Q&k_Q&-k_Q\end{bmatrix}\in\mathbb{R}^{4\times4}.
+M=\begin{bmatrix}
+k_T & k_T & k_T & k_T \\
+0 & -lk_T & 0 & lk_T \\
+-lk_T & 0 & lk_T & 0 \\
+k_Q & -k_Q & k_Q & -k_Q
+\end{bmatrix}\in\mathbb{R}^{4\times4}.
 $$
 
 The rows of $M$ are pairwise orthogonal and non-zero, so $M$ is invertible whenever $k_T,k_Q,l\neq0$. Any $U$ can therefore be mapped to the squared rotor speeds through $M^{-1}$.
