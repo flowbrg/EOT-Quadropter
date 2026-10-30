@@ -136,7 +136,11 @@ A thrust $k_T\omega_i^2$ applied at $(x_i,y_i,0)$ produces the torque $(y_i k_T\
 
 $$
 \Gamma(E_b) =
-\begin{bmatrix} l\,k_T(-\omega_2^2 + \omega_4^2) \\ l\,k_T(-\omega_1^2 + \omega_3^2) \\ k_Q(\omega_1^2 - \omega_2^2 + \omega_3^2 - \omega_4^2) \end{bmatrix}
+\begin{bmatrix}
+l\,k_T(-\omega_2^2 + \omega_4^2) \\
+l\,k_T(-\omega_1^2 + \omega_3^2) \\
+k_Q(\omega_1^2 - \omega_2^2 + \omega_3^2 - \omega_4^2)
+\end{bmatrix}
 $$
 
 where $l$ [m] is the distance from each rotor to the centre of mass, $k_T$ [N/(rad/s)$^2$] the thrust coefficient and $k_Q$ [N·m/(rad/s)$^2$] the reaction-torque coefficient.
@@ -182,7 +186,11 @@ $$
 
 Let $U_2=\Gamma_\phi$, $U_3=\Gamma_\theta$ and $U_4=\Gamma_\psi$ be the torque inputs, and let $[p,q,r]^\top=\bar\omega$ be the body rates. The Euler-angle rates satisfy $\dot{\eta}=W(\eta)\,\bar\omega$ with
 
-$$W = \begin{bmatrix} 1 & s_\phi t_\theta & c_\phi t_\theta \\ 0 & c_\phi & -s_\phi \\ 0 & s_\phi/ c_\theta & c_\phi/ c_\theta \end{bmatrix}$$
+$$W = \begin{bmatrix}
+1 & s_\phi t_\theta & c_\phi t_\theta \\
+0 & c_\phi & -s_\phi \\
+0 & s_\phi/ c_\theta & c_\phi/ c_\theta
+\end{bmatrix}$$
 
 > **Approximation A1 (small angles).** $W\simeq I_3$, i.e. $\dot\eta\simeq\bar\omega$. Since $W-I_3=O(\|\eta\|)$, the error on $\dot\eta$ is $O(\|\eta\|\,\|\bar\omega\|)$. The approximation is acceptable only for small roll and pitch. Its validity for the planned trajectories must be checked a posteriori.
 
