@@ -1,4 +1,4 @@
-%% test2.m
+%% test_aug.m
 
 clc; clear; close all;
 

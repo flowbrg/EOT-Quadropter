@@ -2,6 +2,7 @@
 %  CasADi + IPOPT
 % Modele d'etat 12 etats : [x y z vx vy vz phi theta psi p q r]
 % Commandes : 4 vitesses d'helices [w1..w4], normalisees par w_hover
+% Trajectoire sans obstacle
 
 %clear; clc; close all;
 import casadi.*
