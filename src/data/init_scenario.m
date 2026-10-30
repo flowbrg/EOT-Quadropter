@@ -33,7 +33,7 @@ scen.n_buildings = size(scen.buildings, 1);
 
 %  Marge de sécurité autour des bâtiments [m]
 %  À additionner à dx, dy, hz lors de la formulation des contraintes
-ecart = 1.0;    % 1 m de marge — cohérent avec l'envergure ~0.5 m du drone
+scen.ecart = 1.0;    % 1 m de marge — cohérent avec l'envergure ~0.5 m du drone
 
 %% --- Bornes de l'espace de vol ---
 scen.x_min = 0;   scen.x_max = 55;   % [m]

@@ -26,7 +26,7 @@ mot.R     = 0.1;            % [Ohm]
 mot.KE    = 0.01;           % [V.s/rad]
 mot.Jm    = 3.0e-5;         % [kg.m^2]  (hypothese : = drone.Jr)
 mot.Df    = 0; %1e-7;           % [N.m.s/rad]
-%mot.Tf    = 0;              % Frottement sec
+mot.Tf    = 0;              % Frottement sec
 mot.d     = drone.k_Q;      % d = k_Q
 
 w_h      = sqrt(drone.m*9.81/(4*drone.k_T));  % equilibre [rad/s]
