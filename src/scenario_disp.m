@@ -5,8 +5,25 @@
 
 clear; clc; close all;
 
-init_params
-scenario
+load("data/params.mat")
+load("data/scenario.mat")
+
+
+n_buildings = scen.n_buildings;
+buildings = scen.buildings;
+x_min = scen.x_min;
+y_min = scen.y_min;
+z_min = scen.z_min;
+x_max = scen.x_max;
+y_max = scen.y_max;
+z_max = scen.z_max;
+ecart = scen.ecart;
+
+start_pos = scen.start_pos;
+target_pos = scen.target_pos;
+
+start_vel = scen.start_vel;
+target_vel = scen.target_vel;
 
 %% --- Figure ---
 figure; hold on; grid on; axis equal;
