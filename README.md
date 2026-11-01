@@ -256,7 +256,7 @@ The model is nonlinear, time-invariant, continuous-time, MIMO (12 states, 4 inpu
 
 $$X=\begin{bmatrix}x&y&z&v_x&v_y&v_z&\phi&\theta&\psi&p&q&r\end{bmatrix}^\top\in\mathbb{R}^{12},\qquad \omega=\begin{bmatrix}\omega_1&\dots&\omega_4\end{bmatrix}^\top\in\mathbb{R}^{4},$$
 
-and the full model implemented in `dyn.m` is
+and the full model under **A1** can be written as:
 
 $$
 \dot{X}=f(X,\omega)=
@@ -276,8 +276,8 @@ $$
 
 with $U=M[\omega_1^2,\dots,\omega_4^2]^\top$ and $\omega_G=-\omega_1+\omega_2-\omega_3+\omega_4$.
 
-> **Note.** The model uses the exact kinematics $\dot\eta=W(\eta)\bar\omega$, so it does not rely on approximation A1. A1 will only be used to reduce the NLP solving computations. \
-> It remains singular at $\theta=\pm\pi/2$.
+> **Note.** The "real" model uses the exact kinematics $\dot\eta=W(\eta)\bar\omega$. A1 will only help reducing the NLP solving computations. \
+> The matrix above remains singular at $\theta=\pm\pi/2$.
 
 ## 2. Hover and linearization
 
@@ -326,12 +326,74 @@ $$B_\omega=2\omega_h\,B_U\,M .$$
 - Since the pair is controllable, an LQR gain exists for $Q>0$, $R>0$, and it is unique. The weights are chosen with Bryson's rule, $Q=\mathrm{diag}(1/x_{i,max}^2)$ and $R=\mathrm{diag}(1/u_{i,max}^2)$.
 - Observability is not addressed. The simulations assume full-state feedback and no sensor noise.
 
+## 3. Brushless DC motor model
 
-## 3. Battery model
+Each rotor is driven by a brushless DC motor modelled as an equivalent DC machine.
+
+<p align="center">
+  <img src="./figures/bldcm_model.jpg" alt="BLDCM model" width="300"/>
+</p>
+
+The electrical and mechanical equations are
+
+$$\begin{equation}
+L\dot{\bar{i}}_i = \bar{v}_i - R\bar{i}_i - K_E\omega_i
+\end{equation}$$
+
+$$\begin{equation}
+J_r\,\dot{\omega}_i = K_E\bar{i}_i - d\,\omega_i^2 - D_f\,\omega_i - T_f\,\mathrm{sign}(\omega_i)
+\end{equation}$$
+
+where $V_i$ is the applied voltage, $I_i$ the current, $R$ and $L$ the winding resistance and inductance, $K_E$ the back-EMF constant, $J_r$ the rotor inertia, $d$ the propeller load coefficient, $D_f$ the viscous friction coefficient and $T_f$ the dry friction torque. In SI units, the torque constant equals the back-EMF constant, $K_T=K_E$. \
+The four terms of the mechanical equation are:
+
+1. **Electromagnetic torque** $\tau_{em}=K_EI_i$. The back-EMF is $K_E\omega_i$, and the current is $I_i=(V_i-K_E\omega_i)/R$ when the electrical dynamics are neglected.
+2. **Propeller load** $\tau_{prop}=d\,\omega_i^2$, with $d=k_Q$. It is the aerodynamic reaction torque of the propeller, quadratic in the speed. It couples the motor to the airframe dynamics and appears in $\Gamma_\psi$.
+3. **Viscous friction** $\tau_{visc}=D_f\,\omega_i$, representing bearing losses and viscous drag of the rotor.
+4. **Dry friction** $\tau_{dry}=T_f\,\mathrm{sgn}(\omega_i)$.
+
+| Parameter | Value | Unit |
+|---|---|---|
+| $K_E$ | $0.01$ | $V\cdot s/rad$ |
+| $R$ | $0.1$ | $\Omega$ |
+| $J_r$ | $3\times10^{-5}$ | $kg\cdot m^2$ |
+| $d=k_Q$ | $7.5\times10^{-7}$ | $Nm/(rad/s)^2$ |
+| $D_f$ | $0$ | $Nm\cdot s/rad$ |
+| $T_f$ | $0$ | $Nm$ |
+| $L$ | $0$ | $H$ |
+
+> **Assumption M1.** $D_f=T_f=0$. \
+> **Assumption M2 (quasi-static current).** $L\dot I_i\simeq0$. This singular-perturbation reduction is valid when $L/R\ll\tau_m$, where $\tau_m$ is the mechanical time constant defined below.
+
+### 3.1 Duty-cycle
+
+The ESC of the BLCM controls the voltage using Pulse-Width Modulation. The voltage and current are generated as follows:
+
+$$\begin{align}
+\bar{v}_i &= V_{term} \cdot D_{C,i} \\
+I_{BLDCM,i} &= \bar{i}_i \cdot D_{C,i}
+\end{align}$$
+
+Where $V_{term}$ Is the voltage output of the battery, and $I_{BLDCM,i}$ is the current of the $i^{th}$ motor.
+
+
+The duty-cycle can be determined through experimental correlations, however, we chose to make a simple feedforward function $D_{c,i}=f(\omega_{i,ref})$ using the electrical and mecanical equations above in steady state.
+
+Assuming $V_{term} \simeq E_{ocv}$, **M1** and **M2**:
+
+$$\begin{equation}
+D_C = \frac{\bar{v}_i}{E_{ocv}}=\frac{R\,d}{K_E\,E_{ocv}}\omega_{ref}^2 + \frac{K_E}{E_{ocv}}\omega_{ref}
+\end{equation}$$
+
+See next section for $E_{ocv}$.
+
+## 4. Battery model
 
 The battery is modelled by a Thévenin equivalent circuit. The model provides the terminal voltage, the discharge current drawn by the four motors and the state of charge (SoC), which is later used as an additional state and as a constraint of the trajectory optimization.
 
-### 3.1 Assumptions
+There are no Health model, nor temperature model for this battery. It may change in the future.
+
+### 4.1 Assumptions
 
 > **Assumptions.** \
 > **(B1)** The battery is a 3S LiPo pack, i.e. $N_s=3$ cells in series. \
@@ -340,7 +402,9 @@ The battery is modelled by a Thévenin equivalent circuit. The model provides th
 > **(B4)** The current is positive during discharge. \
 > **(B5)** The resistance $R_{\text{int}}$ and the capacity $C_{\text{batt}}$ are constant. Ageing (state of health) is not modelled. 
 
-### 3.2 Equivalent circuit
+### 4.2 Equivalent circuit
+
+# **REPRENDRE CETTE PARTIE**
 
 The first-order Thévenin model consists of an open-circuit voltage source $V_{oc}(\text{SoC})$ in series with an internal resistance $R_{\text{int}}$ and with a parallel branch $R_1\parallel C_1$ that represents the diffusion dynamics:
 
@@ -362,7 +426,7 @@ $$\boxed{V_{\text{term}}(t) = V_{oc}(\text{SoC}) - R_{\text{int}} \, I(t)}$$
 
 The consequence is that the terminal voltage responds instantaneously to a change of current, whereas the full circuit would show a transient with time constant $R_1C_1$.
 
-### 3.3 Power drawn by the motors
+### 4.3 Power drawn by the motors
 
 Each motor $i$ delivers the mechanical power $\Gamma_i\,\omega_i$, where $\omega_i$ is the rotor speed of Section 1 and $\Gamma_i$ the propeller load torque of Section 3. With $\Gamma_i=k_Q\omega_i^2$ (in steady state, $\Gamma_{em}=\Gamma_{prop}$), the electrical power drawn from the battery is
 
@@ -382,7 +446,7 @@ At hover, $\eta_{motor}(\omega_h)\approx0.87$. This value excludes the ESC losse
 
 Order of magnitude at hover: $\sum_i k_Q\omega_h^3\approx24.8$ W of mechanical power, hence an electrical power between $24.8/0.9\approx27.5$ W and $24.8/0.7\approx35.4$ W.
 
-### 3.4 Discharge current
+### 4.4 Discharge current
 
 The power balance at the battery terminals is $P_{\text{batt}}=V_{\text{term}}\,I$, so that
 
@@ -400,13 +464,13 @@ $$I(t) \approx \frac{P_{\text{batt}}(t)}{V_{oc}(\text{SoC}(t))}$$
 
 > **Assumption B6.** $R_{\text{int}}I\ll V_{oc}$. The relative error on the voltage is $R_{\text{int}}I/V_{oc}$ and can only be evaluated once $R_{\text{int}}$ is known. At hover, with the power range of Section 4.3 and $V_{oc}\in[9.9,\,12.6]$ V (Section 4.6), the current is between $27.5/12.6\approx2.2$ A and $35.4/9.9\approx3.6$ A.
 
-### 3.5 State-of-charge dynamics
+### 4.5 State-of-charge dynamics
 
 $$\boxed{\dot{\text{SoC}}(t) = -\frac{I(t)}{C_{\text{batt}}}}$$
 
 where $C_{\text{batt}}$ is the battery capacity in ampere-seconds [A·s] (a capacity of $x$ mAh corresponds to $3.6\,x$ A·s). The equation is dimensionally consistent: $[\mathrm{A}]/[\mathrm{A\,s}]=[\mathrm{s^{-1}}]$. It is a pure Coulomb counting, i.e. it assumes a unit coulombic efficiency and a capacity independent of the discharge rate (no Peukert effect). The SoC is dimensionless, with $\text{SoC}\in[0,1]$.
 
-### 3.6 Open-circuit voltage
+### 4.6 Open-circuit voltage
 
 $$V_{oc}(\text{SoC}) = V_{\min} + (V_{\max} - V_{\min}) \cdot \text{SoC}$$
 
@@ -414,7 +478,7 @@ Typical values for a 3S LiPo pack are $V_{\min} = 9.9\text{ V}$ and $V_{\max} = 
 
 > **Limit of validity.** The open-circuit voltage of a LiPo cell is not linear in SoC: it shows a plateau over most of the range and a sharp drop at low SoC. The linear model is therefore an approximation, whose error on $V_{oc}$, and hence on $I$, is not quantified here. It must be checked against a measured or manufacturer discharge curve before the SoC constraint is trusted, especially close to $\text{SoC}_{\min}$.
 
-### 3.7 Augmented state
+### 4.7 Augmented state
 
 The SoC is added as a 13th state. Here $\mathbf{x}$ denotes the state $X\in\mathbb{R}^{12}$ of Section 1.6 and $\mathbf{u}$ the vector of rotor speeds $\omega\in\mathbb{R}^4$:
 
@@ -424,7 +488,7 @@ $$\dot{\mathbf{x}}_{\text{aug}} = \begin{bmatrix} f(\mathbf{x}, \mathbf{u}) \\ -
 
 The coupling is one-way: the SoC depends on $\mathbf{u}$ through $P_{\text{batt}}$ and on itself through $V_{oc}$, but it does not enter $f$. The flight dynamics are therefore unaffected by the battery model. The SoC acts as a constraint and as a cost-related quantity of the optimization problem, for instance through $\text{SoC}(t)\ge\text{SoC}_{\min}$.
 
-### 3.8 Energy criterion
+### 4.8 Energy criterion
 
 The total energy drawn from the battery over the mission $[0,t_f]$ is
 
@@ -440,65 +504,3 @@ which is the objective function of the nonlinear programming problem.
 > (i) The equivalence holds only under P1. If $\eta_m$ depended on $\omega_i$, as in Section 4.3, the two criteria would have different minimizers. \
 > (ii) $J$ is the energy at the motor and ESC input, not the charge drawn from the cells. The charge is $\int_0^{t_f}I\,dt=C_{\text{batt}}\,(\text{SoC}(0)-\text{SoC}(t_f))$. Assuming $I\simeq P_{\text{batt}}/V_{oc}(\text{SoC})$, the two criteria differ by the variation of $V_{oc}$ along the mission. The SoC constraint accounts for this difference, whereas $J$ does not. \
 > (iii) The criterion does not include the avionics power. If the avionics power is constant, it adds a term proportional to $t_f$, which matters as soon as the final time is a decision variable.
-
-## 4. Brushless DC motor model
-
-Each rotor is driven by a brushless DC motor modelled as an equivalent DC machine. The electrical and mechanical equations are
-
-$$L\dot{I}_i = V_i - RI_i - K_E\omega_i$$
-
-$$J_r\,\dot{\omega}_i = K_EI_i - d\,\omega_i^2 - D_f\,\omega_i - T_f\,\mathrm{sgn}(\omega_i)$$
-
-where $V_i$ is the applied voltage, $I_i$ the current, $R$ and $L$ the winding resistance and inductance, $K_E$ the back-EMF constant, $J_r$ the rotor inertia, $d$ the propeller load coefficient, $D_f$ the viscous friction coefficient and $T_f$ the dry friction torque. In SI units, the torque constant equals the back-EMF constant, $K_T=K_E$. The four terms of the mechanical equation are:
-
-1. **Electromagnetic torque** $\tau_{em}=K_EI_i$. The back-EMF is $K_E\omega_i$, and the current is $I_i=(V_i-K_E\omega_i)/R$ when the electrical dynamics are neglected.
-2. **Propeller load** $\tau_{prop}=d\,\omega_i^2$, with $d=k_Q$. It is the aerodynamic reaction torque of the propeller, quadratic in the speed. It couples the motor to the airframe dynamics and appears in $\Gamma_\psi$.
-3. **Viscous friction** $\tau_{visc}=D_f\,\omega_i$, representing bearing losses and viscous drag of the rotor.
-4. **Dry friction** $\tau_{dry}=T_f\,\mathrm{sgn}(\omega_i)$.
-
-### 4.1 Parameters
-
-| Parameter | Value | Unit |
-|---|---|---|
-| $K_E$ | $0.01$ | $V\cdot s/rad$ |
-| $R$ | $0.1$ | $\Omega$ |
-| $J_r$ | $3\times10^{-5}$ | $kg\cdot m^2$ |
-| $d=k_Q$ | $7.5\times10^{-7}$ | $Nm/(rad/s)^2$ |
-| $D_f$ | $10^{-7}$ | $Nm\cdot s/rad$ |
-
-The inductance $L$ and the dry friction $T_f$ are not specified.
-
-### 4.2 Reduction
-
-At the hover speed $\omega_h\approx202$ rad/s, the viscous torque and the propeller load are
-
-$$D_f\,\omega_h\approx2\times10^{-5}\ \text{N.m},\qquad d\,\omega_h^2\approx3\times10^{-2}\ \text{N.m},$$
-
-so that $D_f\omega_h/(d\omega_h^2)\approx7\times10^{-4}$. The viscous friction is therefore neglected. The dry friction is neglected as well, but this is an assumption: no value of $T_f$ is available to quantify it. Two assumptions are then made.
-
-> **Assumption M1.** $D_f=T_f=0$. \
-> **Assumption M2 (quasi-static current).** $L\dot I_i\simeq0$. This singular-perturbation reduction is valid when $L/R\ll\tau_m$, where $\tau_m$ is the mechanical time constant defined below. The condition cannot be verified without a value for $L$.
-
-Under M1 and M2, the motor reduces to a first-order system:
-
-$$J_r\,\dot{\omega}_i = \frac{K_E}{R}(V_i - K_E\omega_i) - k_Q\,\omega_i^2 .$$
-
-Linearizing around $\omega_h$, with $\delta\omega_i=\omega_i-\omega_h$ and $\delta V_i$ the voltage deviation from the hover voltage, gives
-
-$$J_r\,\delta\dot{\omega}_i = -\left(\frac{K_E^2}{R} + 2k_Q\omega_h\right)\delta\omega_i+\frac{K_E}{R}\,\delta V_i .$$
-
-The effective time constant is
-
-$$\boxed{\tau_m = \frac{J_r}{\dfrac{K_E^2}{R} + 2k_Q\,\omega_h}}$$
-
-With the parameters above,
-
-$$\frac{K_E^2}{R} = \frac{(0.01)^2}{0.1} = 10^{-3}\ \text{N.m.s/rad},\qquad 2k_Q\omega_h \approx 3\times10^{-4}\ \text{N.m.s/rad},$$
-
-$$\tau_m=\frac{3\times10^{-5}}{10^{-3}+3\times10^{-4}}\approx 23\ \text{ms}.$$
-
-### 4.3 Consequence for the quadrotor model
-
-`dyn.m` takes the rotor speeds $\omega_i$ as inputs, which amounts to treating the actuators as quasi-static.
-
-The quasi-static actuator approximation is appropriate when the dominant frequencies of the commanded rotor-speed trajectories are significantly lower than the motor bandwidth ($\simeq6,9\,Hz$). For higher-frequency commands, motor dynamics should be explicitly included.
