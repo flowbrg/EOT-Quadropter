@@ -1,4 +1,4 @@
 *.asv
 *.slxc
-/slprj
+slprj/
 .$*
