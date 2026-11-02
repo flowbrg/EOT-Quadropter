@@ -297,8 +297,15 @@ The linear model is :
 
 $$
 \delta\dot X=A\,\delta X+B_U\,\delta U,\qquad
-A=\begin{bmatrix}0&I_3&0&0\\0&0&A_{v\eta}&0\\0&0&0&I_3\\0&0&0&0\end{bmatrix},\quad
-A_{v\eta}=\begin{bmatrix}0&g&0\\-g&0&0\\0&0&0\end{bmatrix}
+A=\begin{bmatrix}
+0 & I_3 & 0 & 0 \\
+0 & 0 & A_{v\eta} & 0 \\
+0 & 0 & 0 & I_3 \\
+0 & 0 & 0 & 0 \end{bmatrix},\quad
+A_{v\eta}=\begin{bmatrix}
+0 & g & 0 \\
+-g & 0 & 0 \\
+0 & 0 & 0 \end{bmatrix}
 $$
 
 where the blocks of $A$ follow the partition $(\xi,v,\eta,\bar\omega)$ and $B_U\in\mathbb{R}^{12\times4}$ has only four non-zero entries:
@@ -437,7 +444,6 @@ Also, $I(t) = \sum_{k=1}^4I_{BLDCM,k}$
 Following the previous sections, we can write the augmented state model of the drone:
 
 $$
-\left\{
 \begin{aligned}
 \dot{\xi} &= v\\
 m\dot{v}  &= R_b E(3)\,T_{thr} - mgE(3)\\
@@ -446,7 +452,7 @@ I\dot{\bar{\Omega}} &= - \bar{\Omega} \wedge I\bar{\Omega} + \Gamma(E_b)\\
 \dot{\omega_i} &= \frac{1}{J_r}(K_E\,\bar{i}_i-k_Q)\, \omega_i^2, \quad \bar{i}_i = \frac{V_{term} \cdot D_{C,i}-K_E\,\omega_i}{R}\\
 \dot{SoC} &= -\frac{\sum_{k=1}^4D_{C,k}\bar{i}_k}{C_{batt}}
 \end{aligned}
-\right.$$
+$$
 
 which iteractions can be represented as follows:
 
