@@ -328,66 +328,6 @@ $$B_\omega=2\omega_h\,B_U\,M .$$
 - Since the pair is controllable, an LQR gain exists for $Q>0$, $R>0$, and it is unique. The weights are chosen with Bryson's rule, $Q=\mathrm{diag}(1/x_{i,max}^2)$ and $R=\mathrm{diag}(1/u_{i,max}^2)$.
 - Observability is not addressed. The simulations assume full-state feedback and no sensor noise.
 
-## 3. Brushless DC motor model
-
-Each rotor is driven by a brushless DC motor modelled as an equivalent DC machine.
-
-<p align="center">
-  <img src="./figures/bldcm_model.jpg" alt="BLDCM model" width="300"/>
-</p>
-
-The electrical and mechanical equations are
-
-$$\begin{equation}
-L\dot{\bar{i}}_i = \bar{v}_i - R\bar{i}_i - K_E\omega_i
-\end{equation}$$
-
-$$\begin{equation}
-J_r\,\dot{\omega}_i = K_E\bar{i}_i - d\,\omega_i^2 - D_f\,\omega_i - T_f\,\mathrm{sign}(\omega_i)
-\end{equation}$$
-
-where $V_i$ is the applied voltage, $I_i$ the current, $R$ and $L$ the winding resistance and inductance, $K_E$ the back-EMF constant, $J_r$ the rotor inertia, $d$ the propeller load coefficient, $D_f$ the viscous friction coefficient and $T_f$ the dry friction torque. **WTF** In SI units, the torque constant equals the back-EMF constant, $K_T=K_E$. \
-<!--TODO: a changer!!!!-->
-The four terms of the mechanical equation are:
-
-1. **Electromagnetic torque** $\tau_{em}=K_EI_i$. The back-EMF is $K_E\omega_i$, and the current is $I_i=(V_i-K_E\omega_i)/R$ when the electrical dynamics are neglected.
-2. **Propeller load** $\tau_{prop}=d\,\omega_i^2$, with $d=k_Q$. It is the aerodynamic reaction torque of the propeller, quadratic in the speed. It couples the motor to the airframe dynamics and appears in $\Gamma_\psi$.
-3. **Viscous friction** $\tau_{visc}=D_f\,\omega_i$, representing bearing losses and viscous drag of the rotor.
-4. **Dry friction** $\tau_{dry}=T_f\,\mathrm{sgn}(\omega_i)$.
-
-> **Assumption.** \
-> **(M1)** $D_f=T_f=0$. \
-> **(M2)** (quasi-static current) $L\dot I_i\simeq0$. This singular-perturbation reduction is valid when $L/R\ll\tau_m$, where $\tau_m$ is the mechanical time constant defined below.
-
-### 3.1 Duty-cycle
-
-The ESC of the BLCM controls the voltage using Pulse-Width Modulation. The voltage and current are generated as follows:
-
-$$\begin{align}
-\bar{v}_i &= V_{term} \cdot D_{C,i} \\
-I_{BLDCM,i} &= \bar{i}_i \cdot D_{C,i}
-\end{align}$$
-
-Where $V_{term}$ Is the voltage output of the battery, and $I_{BLDCM,i}$ is the current of the $i^{th}$ motor.
-
-
-The duty-cycle can be determined through experimental correlations, however, we chose to make a simple feedforward function $D_{c,i}=f(\omega_{i,ref})$ using the electrical and mecanical equations above in steady state.
-
-Assuming $V_{term} \simeq E_{ocv}$, **M1** and **M2**:
-
-$$\begin{equation}
-D_C = \frac{\bar{v}_i}{E_{ocv}}=\frac{R\,d}{K_E\,E_{ocv}}\omega_{ref}^2 + \frac{K_E}{E_{ocv}}\omega_{ref}
-\end{equation}$$
-
-See section 4.3 for $E_{ocv}$.
-
-## 3.2 Motor dynamics
-
-Finally the BLDCM equation can be written as:
-$$\boxed{\dot{\omega_i} = \frac{1}{J_r}(K_E\,\bar{i}_i-k_Q)\, \omega_i^2}$$
-
-with $$\bar{i}_i = \frac{V_{term} \cdot D_{C,i}-K_E\,\omega_i}{R}$$
-
 ## 4. Battery model
 
 The battery is modelled by a Thévenin equivalent circuit. The model provides the terminal voltage, the discharge current drawn by the four motors and the state of charge (SoC), which is later used as an additional state and as a constraint of the trajectory optimization.
@@ -438,10 +378,164 @@ $$\boxed{\dot{\text{SoC}}(t) = -\frac{I(t)}{C_{\text{batt}}}}$$
 where $C_{\text{batt}}$ is the battery capacity in ampere-seconds [A·s] (a capacity of $x$ mAh corresponds to $3.6\,x$ A·s). The equation is dimensionally consistent: $[\mathrm{A}]/[\mathrm{A\,s}]=[\mathrm{s^{-1}}]$. It is a pure Coulomb counting, i.e. it assumes a unit coulombic efficiency and a capacity independent of the discharge rate (no Peukert effect). The SoC is dimensionless, with $\text{SoC}\in[0,1]$. \
 Also, $I(t) = \sum_{k=1}^4I_{BLDCM,k}$
 
+## 3. Brushless DC motor model
+
+Each rotor is driven by a brushless DC motor modelled as an equivalent DC machine.
+
+<p align="center">
+  <img src="./figures/bldcm_model.jpg" alt="BLDCM model" width="300"/>
+</p>
+
+The electrical and mechanical equations are
+
+$$\begin{equation}
+L\dot{\bar{i}}_i = \bar{v}_i - R\bar{i}_i - K_E\omega_i
+\end{equation}$$
+
+$$\begin{equation}
+J_r\,\dot{\omega}_i = K_E\bar{i}_i - d\,\omega_i^2 - D_f\,\omega_i - T_f\,\mathrm{sign}(\omega_i)
+\end{equation}$$
+
+where $V_i$ is the applied voltage, $I_i$ the current, $R$ and $L$ the winding resistance and inductance, $K_E$ the back-EMF constant, $J_r$ the rotor inertia, $d$ the propeller load coefficient, $D_f$ the viscous friction coefficient and $T_f$ the dry friction torque.
+
+The four terms of the mechanical equation are:
+
+1. **Electromagnetic torque** $\tau_{em}=K_EI_i$. The back-EMF is $K_E\omega_i$, and the current is $I_i=(V_i-K_E\omega_i)/R$ when the electrical dynamics are neglected.
+2. **Propeller load** $\tau_{prop}=d\,\omega_i^2$, with $d=k_Q$. It is the aerodynamic reaction torque of the propeller, quadratic in the speed. It couples the motor to the airframe dynamics and appears in $\Gamma_\psi$.
+3. **Viscous friction** $\tau_{visc}=D_f\,\omega_i$, representing bearing losses and viscous drag of the rotor.
+4. **Dry friction** $\tau_{dry}=T_f\,\mathrm{sgn}(\omega_i)$.
+
+> **Assumption.** \
+> **(M1)** $D_f=T_f=0$. \
+> **(M2)** (quasi-static current) $L\dot I_i\simeq0$. This singular-perturbation reduction is valid when $L/R\ll\tau_m$, where $\tau_m$ is the mechanical time constant defined below.
+
+### 3.2 Motor dynamics
+
+Finally the BLDCM equation can be written as:
+$$\boxed{\dot{\omega_i} = \frac{1}{J_r}(K_E\,\bar{i}_i-k_Q\, \omega_i^2)}$$
+
+with
+$$\bar{i}_i = \frac{V_{term} \cdot D_{C,i}-K_E\,\omega_i}{R}$$
+
+### Note on the BLDCM-Battery algebraic loop
+
+Looking back at the equations, we can identify an algebraic loop. \
+$V_{term}$ is required to compute $i_k$ (eq. xx), but in the battery, (all 4) $i_k$ are needed to compute $V_{term}$ (eq. xx).
+
+Building the model as is in simulink triggers an algebraic loop warning. This issue can be also spotted when writting the model as a matlab functions, since the two variables need each others.
+Let us handle the issue.
+
+For each motor $k$, we have :
+
+$$ i_k=\frac{V_{term}D_{c,k}-K_E\omega_k}{R} $$
+
+The output voltage is :
+
+$$
+V_{term}=V_{oc}-R_{int} (\sum_{k=1}^{4}D_{c,k}i_k)
+$$
+
+Replacing each $i_k$ in the sum and developping gives :
+
+$$
+\sum_{k=1}^{4}D_{c,k}i_k=\frac{1}{R} [ V_{term}\sum_{k=1}^{4}D_{c,k}^2 -K_E\sum_{k=1}^{4}D_{c,k}\omega_k ]
+$$
+
+Let
+
+$$ A=\sum_{k=1}^{4}D_{c,k}^2 $$
+
+$$ B=K_E\sum_{k=1}^{4}D_{c,k}\omega_k $$
+
+We get:
+
+$$ V_{term} = V_{oc}-\frac{R_{int}}{R}(AV_{term} - B) $$
+
+Then :
+
+$$ V_{term}(1 + \frac{R_{int}A}{R}) = V_{oc} + \frac{R_{int}B}{R}$$
+
+Finally :
+
+$$\begin{equation}
+\boxed{ V_{term} = \frac{R\,V_{oc}+R_{int}\,B}{R + R_{int}\,A} }
+\end{equation}$$
+
+
+And each current :
+
+$$\begin{equation}
+\boxed{ i_k=\frac{V_{term}D_{c,k}-K_E\omega_k} {R}}
+\end{equation}$$
+
+## Duty-cycle
+
+The ESC of the BLCM controls the voltage using Pulse-Width Modulation. The voltage and current are generated as follows:
+
+$$\begin{align}
+\bar{v}_i &= V_{term} \cdot D_{C,i} \\
+I_{BLDCM,i} &= \bar{i}_i \cdot D_{C,i}
+\end{align}$$
+
+Where $V_{term}$ Is the voltage output of the battery, and $I_{BLDCM,i}$ is the current of the $i^{th}$ motor.
+
+
+The duty-cycle can be determined through experimental correlations, however, we chose to make a simple feedforward function $D_{c,i}=f(\omega_{i,ref})$ using the electrical and mecanical equations above in steady state.
+
+### First feedforward approach
+
+Assuming $V_{term} \simeq E_{ocv}$ (Open circuit voltage, see section 4.3), **M1** and **M2**:
+
+In steady-state :
+
+$$ \dot{\omega}_k=0 $$
+
+Thus :
+
+$$ K_Ei_k-k_Q\omega_k^2=0 $$
+
+Which gives :
+
+$$ \boxed{i_k=\frac{k_Q}{K_E}\omega_k^2} $$
+
+By reinjecting in the electrical equation :
+
+$$ \frac{k_Q}{K_E}\omega_k^2 = \frac{V_{term}D_{c,k}-K_E\omega_k}{R} $$
+
+And finally :
+
+$$\begin{equation}
+\boxed{ D_{c,k} = \frac{K_E\omega_k+ R\frac{k_Q}{K_E}\omega_k^2} {V_{term}} = \frac{K_E\omega_k+ R\frac{k_Q}{K_E}\omega_k^2} {E_{ocv}} }
+\end{equation}$$
+
+$V_{term} \simeq E_{ocv}$ may seem a good approximation in the first place. Indeed, a single BLDCM on its own seems to work fine.
+
+<p align="center">
+  <img src="./figures/duty_cycle_plot_0.jpg" alt="Naive duty-cycle single BLDCM" width="400"/>
+</p>
+
+But once plugged into the augmented model, specifically with the battery model, the approximation is not true anymore, as shown in the picture below.
+
+<p align="center">
+  <img src="./figures/duty_cycle_plot_1.jpg" alt="Naive duty-cycle in augmented model (4 BLDCMs)" width="400"/>
+</p>
+
+The first part of the graph shows $w_{1,ref}=202.2\,rad/s$ and $w_1 = 183.1\,rad/s$, which makes up for a $10\%$ difference between output and reference, which is non-negligeable. Hence the need for a better function. \
+I tried pushing this idea a little further by keeping $V_{term} = V_{oc} - R_{int}i$ and assuming $V_{oc}\simeq E_{ocv}$, but that did not solve the problem, it performed on par with this version. You can find the calculations at the bottom of the document though.
+
+### Feedforward + PI feedback
+
+The chosen solution is to add a PI feedback to the previous feedforward function.
+
+<p align="center">
+  <img src="./figures/duty_cycle_schema.jpg" alt="Duty-cycle + feedback" width="400"/>
+</p>
+
+The PI coefficients were chosen by linearizing the BLDCM model (eq. xx and xx) around $(D_{c,i},w_i)=(0,0)$.
 
 ## Augmented model
 
-Following the previous sections, we can write the augmented state model of the drone:
+Following the previous sections, we can write the augmented state model of the drone :
 
 $$
 \begin{aligned}
@@ -449,12 +543,12 @@ $$
 m\dot{v}  &= R_b E(3)\,T_{thr} - mgE(3)\\
 \dot{R_b} &= R_b \hat{\bar{\Omega}}\\
 I\dot{\bar{\Omega}} &= - \bar{\Omega} \wedge I\bar{\Omega} + \Gamma(E_b)\\
-\dot{\omega_i} &= \frac{1}{J_r}(K_E\,\bar{i}_i-k_Q)\, \omega_i^2, \quad \bar{i}_i = \frac{V_{term} \cdot D_{C,i}-K_E\,\omega_i}{R}\\
-\dot{SoC} &= -\frac{\sum_{k=1}^4D_{C,k}\bar{i}_k}{C_{batt}}
+\dot{\omega}_k &= \frac{1}{J_r}(K_E\,\bar{i}_k-k_Q)\, \omega_k^2, \quad \bar{i}_k = \frac{V_{term} \cdot D_{C,k}-K_E\,\omega_k}{R}\\
+\dot{SoC} &= -\frac{\sum_{k=1}^4D_{C,k}\bar{i}_k}{C_{batt}} = \frac{V_{term}-V_{oc}}{R_{int}C_{batt}}
 \end{aligned}
 $$
 
-which iteractions can be represented as follows:
+which can be represented in the diagram below :
 
 <p align="center">
   <img src="./figures/subsystems.jpg" alt="Subsystems" width="400"/>
@@ -486,3 +580,117 @@ which iteractions can be represented as follows:
 | $D_f$ | Viscous friction coefficient | $0$ | $Nm\cdot s/rad$ |
 | $T_f$ | Dry friction | $0$ | $Nm$ |
 | $L$ | Inductance | $0$ | $H$ |
+| $K_p$ | Proportional feedback | $9.4\times10^{-4}$ | $s/rad$ |
+| $K_i$ | Integral feedback | $9.42\times10^{-2}$ | $rad$ |
+
+
+
+## Second Duty-cycle feedforward approach
+
+The previous feedforward strategy only took into account a single motor, and assumed no internal resistance for the battery. The following approach takes into account every motors and only assumes $V_{oc} \simeq E_{ocv}$ which appears to be correct for $SoC > 0.3$ (see section X.X).
+
+Let :
+
+$$
+C=\sum_{j=1}^{4} \frac{k_Q}{K_E}\omega_j^2 ( K_E\omega_j+ R\frac{k_Q}{K_E}\omega_j^2 )
+$$
+
+According to eq. xx, the sum of the currents weighted by the duty cycles is :
+
+$$
+\sum_{j=1}^{4}D_{c,j}i_j =\frac{C}{V_{term}}
+$$
+
+But :
+
+$$
+V_{term}=E_{ocv}-R_{int} \sum_{j=1}^{4}D_{c,j}i_j
+$$
+
+Thus :
+
+$$
+V_{term}=E_{ocv}-R_{int}\frac{C}{V_{term}}
+$$
+
+We get :
+
+$$ V_{term}^2-E_{ocv}V_{term}+R_{int}C=0 $$
+
+And :
+
+$$ \boxed{ V_{term}= \frac{E_{ocv}+\sqrt{E_{ocv}^2-4R_{int}C}}{2} } $$
+
+Here, we select the root corresponding to the highest voltage—that is, the typical operating range of a battery with a low voltage drop.
+
+And finally:
+
+$$\begin{equation}
+\boxed{ D_{c,k}= \frac{K_E\omega_{k,ref}+ R\frac{k_Q}{K_E}\omega_{k,ref}^2} {V_{term}}}
+\end{equation}$$
+
+Unfortunately, this method is as (in)efficient as the previous one.
+
+
+## Path-planning based on energy consumption
+
+These planning strategies cast trajectory generation as an **optimal control problem**: find the motor speeds $\omega_k(t)$ that bring the drone from an initial state to a final state while minimizing an energy criterion $J$, subject to the quadrotor, motor and battery dynamics and to bounds on the states and inputs.
+
+$$
+\min_{\omega}\; J \quad \text{s.t.}\quad \dot X=f(X,\omega),\;\; X(0)=X_0,\;\; X(t_f)=X_f,\;\; \text{bounds}
+$$
+
+The problem is solved by **direct collocation**: time is discretized into $N$ nodes, the differential equations become algebraic constraints between neighbouring nodes, and the integral in $J$ becomes a sum. The result is a finite-dimensional nonlinear program (NLP), which is solved numerically by **IPOPT**, an interior-point solver for large, sparse, non-convex problems. It returns a local optimum, meaning a good initial guess matters.
+
+This is the open-loop strategy of this repo, as opposed to following a pre-defined polynomial trajectory in closed loop that we will discuss later. The criteria differ only in the cost $J$ and are detailed in the following sections.
+
+In our case, we are trying to minimize the power drained from the battery, which is:
+$$\begin{equation}
+J = \int_0^{t_f}V_{oc}\cdot I_{batt}\,dt
+\end{equation}$$
+
+### $J$ as a function of $\omega_i$
+The first option requires writting the criterion as a function of $\omega_i$. The BLDCM electrical equation gives:
+
+$$
+P_m=V_{term}I_{batt} = \sum_{k=1}^4V_{term}D_{c,k}i_k=\sum_{k=1}^4(R\,i_k^2 + K_E\omega_k i_k)
+$$
+
+Then using the BLDCM mechanical equation :
+
+$$
+P_m=\sum_{k=1}^4(\frac{R}{K_E^2}(J_r\dot{\omega}_k+k_Q\omega_k^2)^2 + \omega_k(J_r\dot{\omega}_k+k_Q\omega_k^2))
+$$
+
+Then :
+
+$$\begin{equation}
+\boxed{P_m=\sum_{k=1}^4(k_Q\,\omega_k^3+\frac{Rk_Q^2}{K_E^2}\omega_k^4+J_r\dot{\omega}_k\omega_k+\frac{2RJ_rk_Q}{K_E^2}\omega_k^2\dot{\omega}_k + \frac{RJ_r^2}{K_E^2}\dot{\omega}_k^2)}
+\end{equation}$$
+
+But this equation is the power drawn by the motors, assuming no internal resistance of the battery.
+From the battery electrical equation (xx) :
+
+$$
+R_{int}\,I_{batt}^2-V_{oc}\,I_{batt}+P_m=0
+$$
+
+Taking the low-current root (The physical one, $I_{batt}\rightarrow P_m/V_{oc}$ as $R_{int}\rightarrow 0$) :
+
+$$
+I_{batt}=\frac{V_{oc}-\sqrt{V_{oc}^2-4R_{int}P_m(\omega,\dot{\omega})}}{2R_{int}}
+$$
+
+Since $4R_{inr}P_m/V_{oc}^2  \ll 1$:
+
+$$
+V_{oc}I_{batt}=P_m+\frac{R_{int}}{V_{oc}^2}P_m^2+O(R_{int}^2)
+$$
+
+At zeroth order $J\simeq\int P_m\,dt$. The $\omega\dot{\omega}$ and $\omega^2\dot{\omega}$ terms are exact derivatives and cancel out if $\omega(0) = \omega(t_f)$.
+
+$$
+\int_0^{t_f}\!\!\sum_k\Big(J_r\omega_k\dot\omega_k+\tfrac{2RJ_rk_Q}{K_E^2}\omega_k^2\dot\omega_k\Big)dt=\sum_k\Big[\tfrac{J_r}{2}\omega_k^2+\tfrac{2RJ_rk_Q}{3K_E^2}\omega_k^3\Big]_0^{t_f}.
+$$
+
+For this project, we will use
