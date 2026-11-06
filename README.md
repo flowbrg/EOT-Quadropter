@@ -438,7 +438,7 @@ $$
 Replacing each $i_k$ in the sum and developping gives :
 
 $$
-\sum_{k=1}^{4}D_{c,k}i_k=\frac{1}{R} [ V_{term}\sum_{k=1}^{4}D_{c,k}^2 -K_E\sum_{k=1}^{4}D_{c,k}\omega_k ]
+\sum_{k=1}^{4}D_{c,k}i_k=\frac{1}{R} \Big[ V_{term}\sum_{k=1}^{4}D_{c,k}^2 -K_E\sum_{k=1}^{4}D_{c,k}\omega_k \Big]
 $$
 
 Let
@@ -453,7 +453,7 @@ $$ V_{term} = V_{oc}-\frac{R_{int}}{R}(AV_{term} - B) $$
 
 Then :
 
-$$ V_{term}(1 + \frac{R_{int}A}{R}) = V_{oc} + \frac{R_{int}B}{R}$$
+$$ V_{term}\Big(1 + \frac{R_{int}A}{R}\Big) = V_{oc} + \frac{R_{int}B}{R}$$
 
 Finally :
 
@@ -592,7 +592,7 @@ The previous feedforward strategy only took into account a single motor, and ass
 Let :
 
 $$
-C=\sum_{j=1}^{4} \frac{k_Q}{K_E}\omega_j^2 ( K_E\omega_j+ R\frac{k_Q}{K_E}\omega_j^2 )
+C=\sum_{j=1}^{4} \frac{k_Q}{K_E}\omega_j^2 \Big( K_E\omega_j+ R\frac{k_Q}{K_E}\omega_j^2 \Big)
 $$
 
 According to eq. xx, the sum of the currents weighted by the duty cycles is :
@@ -649,7 +649,7 @@ $$\begin{equation}
 J = \int_0^{t_f}V_{oc}\cdot I_{batt}\,dt
 \end{equation}$$
 
-### $J$ as a function of $\omega_i$
+### Using angular speeds
 The first option requires writting the criterion as a function of $\omega_i$. The BLDCM electrical equation gives:
 
 $$
@@ -665,7 +665,7 @@ $$
 Then :
 
 $$\begin{equation}
-\boxed{P_m=\sum_{k=1}^4(k_Q\,\omega_k^3+\frac{Rk_Q^2}{K_E^2}\omega_k^4+J_r\dot{\omega}_k\omega_k+\frac{2RJ_rk_Q}{K_E^2}\omega_k^2\dot{\omega}_k + \frac{RJ_r^2}{K_E^2}\dot{\omega}_k^2)}
+\boxed{P_m=\sum_{k=1}^4\Big(k_Q\,\omega_k^3+\frac{Rk_Q^2}{K_E^2}\omega_k^4+J_r\dot{\omega}_k\omega_k+\frac{2RJ_rk_Q}{K_E^2}\omega_k^2\dot{\omega}_k + \frac{RJ_r^2}{K_E^2}\dot{\omega}_k^2\Big)}
 \end{equation}$$
 
 But this equation is the power drawn by the motors, assuming no internal resistance of the battery.
@@ -690,7 +690,24 @@ $$
 At zeroth order $J\simeq\int P_m\,dt$. The $\omega\dot{\omega}$ and $\omega^2\dot{\omega}$ terms are exact derivatives and cancel out if $\omega(0) = \omega(t_f)$.
 
 $$
-\int_0^{t_f}\!\!\sum_k\Big(J_r\omega_k\dot\omega_k+\tfrac{2RJ_rk_Q}{K_E^2}\omega_k^2\dot\omega_k\Big)dt=\sum_k\Big[\tfrac{J_r}{2}\omega_k^2+\tfrac{2RJ_rk_Q}{3K_E^2}\omega_k^3\Big]_0^{t_f}.
+\int_0^{t_f}\sum_k\Big(J_r\omega_k\dot\omega_k+\tfrac{2RJ_rk_Q}{K_E^2}\omega_k^2\dot\omega_k\Big)dt=\sum_k\Big[\tfrac{J_r}{2}\omega_k^2+\tfrac{2RJ_rk_Q}{3K_E^2}\omega_k^3\Big]_0^{t_f}.
 $$
 
-For this project, we will use
+For this project, we will be using
+
+$$\begin{equation}
+\boxed{min\,J=\int_0^{tf}\sum_{k=1}^4\Big(k_Q\,\omega_k^3 + \frac{Rk_Q^2}{K_E^2}\omega_k^4 + \frac{RJ_r^2}{K_E^2}\dot{\omega}_k^2\Big)\,dt}
+\end{equation}$$
+
+### Using the state of charge
+An exact alternative can also be used via SoC. Since $V_{oc}I_{batt} dt = -C_{batt}V_{oc}(SoC)dSoC$:
+
+$$
+J=C_{batt}[\Phi(SoC_0)-\Phi(SoC_f)], \quad \Phi(s)=\sum_{i=0}^4\frac{\lambda_i}{i+1}s^{i+1}+\frac{1}{2}\Big(ln(s)s^2-\frac{s^2}{2} \Big).
+$$
+
+Here $J$ depends only on $\Phi(SoC_f)$ directly.
+
+But this technique requires to compute SoC for each node, whereas the previous expression only requires the "base" 12 states model. This is the reason why this repo will not be using the latter expression. \
+It is interesting enough to be put in these notes nonetheless.
+
