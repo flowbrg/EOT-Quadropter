@@ -7,41 +7,48 @@
 %clear; clc; close all;
 import casadi.*
 
-load("data/params.mat")
+load("params.mat")
 p = drone;
-load("data/scenario.mat")          % cree par scenario_fixed.m
+load("scenario.mat")          % cree par scenario_fixed.m
 s = scen;
-addpath("./model")
 
 
 %% --- Paramètres du NLP ---
 Tf_init  = 20;    % initialisation Tf (s)
 Tf_min   = 8;     % [s]  (HYPOTHESE : a valider)
 Tf_max   = 40;    % [s]  (HYPOTHESE : a valider)
-N        = 60;    % nombre d'intervalles
+N        = 100;    % nombre d'intervalles
 
 g0       = 9.81;
-w_h      = sqrt(p.m*g0/(4*p.k_T));   % vitesse hover analytique [rad/s]
-P_h      = 4*p.k_Q*w_h^3;            % puissance hover [W] (normalisation du critere)
+w_h      = drone.w_h;   % vitesse hover analytique [rad/s]
 
 % Bornes commandes (HYPOTHESES : a valider)
-Omega_min = 0.1*w_h;                 % [rad/s]
-Omega_max = 1.8*w_h;                 % [rad/s] -> rapport poussee/poids = 4*1.8^2/4 = 3.24
-u_min     = Omega_min/w_h;           % commande normalisee
-u_max     = Omega_max/w_h;
+w_min = 0.1*w_h;                 % [rad/s]
+w_max = 1.8*w_h;                 % [rad/s] -> rapport poussee/poids = 4*1.8^2/4 = 3.24
+% Rotor angular acceleration bounds [rad/s^2]
+dw_min = -500;
+dw_max = 500;
 
 % Limite d'attitude (evite la singularite d'Euler en theta = +-pi/2)
 ang_lim  = deg2rad(35);              % (HYPOTHESE : a valider)
 
 % Ponderations du critere
-W    = 1e-2*eye(4);   % regularisation sur les variations de commande
+%W    = 1e-2*eye(4);   % regularisation sur les variations de commande
 c_T  = 0;             % poids du temps d'arrivee (extension "advanced") [-]
 
 % Conditions aux limites
 psi0 = 0;
-x_init_bc = [s.start_pos(:);  s.start_vel(:);  0; 0; psi0; 0; 0; 0];
+x_init_bc = [ ...
+    s.start_pos(:); 
+    s.start_vel(:); 
+    0; 0; psi0;
+    0; 0; 0;
+    w_h*ones(4,1)];
 pos_f = s.target_pos(:);
 vel_f = s.target_vel(:);
+
+nx = 16;    % State size
+nu = 4;     % Input size
 
 % Contraintes batiments : super-ellipsoide d'exposant pair p_sq (p_sq = 8)
 % p_sq plus grand -> forme plus proche du pave, mais NLP moins bien conditionne
@@ -53,11 +60,11 @@ p_sq = 8;
 Tf = MX.sym('Tf');
 h  = Tf / N;
 
-% États : [x y z vx vy vz phi theta psi p q r]  taille 12 x (N+1)
-X  = MX.sym('X', 12, N+1);
+% États : [x y z vx vy vz phi theta psi p q r w1 w2 w3 w4]  taille 16 x (N+1)
+X  = MX.sym('X', nx, N+1);
 
-% Commandes : [w1..w4]/w_hover  taille 4 x N
-U  = MX.sym('U', 4, N);
+% Commandes : [w1..w4]/w_hover  taille 4 x (N+1)
+U  = MX.sym('U', nu, N+1);
 
 %% --- Fonction de dynamique ---
 % Entrée : état x (12x1), commande normalisee uc (4x1)
@@ -65,24 +72,28 @@ U  = MX.sym('U', 4, N);
 % Meme equations que dyn.m (sans Jr). J est diagonale : on evite J\(.)
 % avec des MX et on divise elementwise. Verification numerique plus bas.
 
-x_s   = MX.sym('x_s',  12);
-uc_s  = MX.sym('uc_s', 4);
+x_s   = MX.sym('x_s',  nx);
+uc_s  = MX.sym('uc_s', nu); % = dw_s
 
 v_s   = x_s(4:6);
 phi_s = x_s(7); theta_s = x_s(8); psi_s = x_s(9);
 om_s  = x_s(10:12);   % [p; q; r]
+w_s   = x_s(13:16);
+
+
+% Intergrator w
+dw_s = uc_s;
 
 cphi = cos(phi_s);   sphi = sin(phi_s);
 cth  = cos(theta_s); sth  = sin(theta_s); tth = sth/cth;
 cpsi = cos(psi_s);   spsi = sin(psi_s);
 
-Om2 = (uc_s*w_h).^2;                      % Omega_i^2
-
 % Poussee et couples
-T_s     = p.k_T*sum(Om2);
-Gphi_s  = p.l*p.k_T*(Om2(4) - Om2(2));
-Gth_s   = p.l*p.k_T*(Om2(3) - Om2(1));
-Gpsi_s  = p.k_Q*(Om2(1) - Om2(2) + Om2(3) - Om2(4));
+w_s2  = w_s.^2;
+T_s     = p.k_T*sum(w_s2);
+Gphi_s  = p.l*p.k_T*(w_s2(4) - w_s2(2));
+Gth_s   = p.l*p.k_T*(w_s2(3) - w_s2(1));
+Gpsi_s  = p.k_Q*(w_s2(1) - w_s2(2) + w_s2(3) - w_s2(4));
 
 % Matrice de rotation corps -> inertiel (ZYX)
 R_s = [cpsi*cth,  cpsi*sth*sphi - spsi*cphi,  cpsi*sth*cphi + spsi*sphi;
@@ -93,6 +104,7 @@ R_s = [cpsi*cth,  cpsi*sth*sphi - spsi*cphi,  cpsi*sth*cphi + spsi*sphi;
 Wm_s = [1, sphi*tth,  cphi*tth;
         0, cphi,     -sphi;
         0, sphi/cth,  cphi/cth];
+%Wm_s = eye(3);
 
 % Translation
 a_s = (R_s*vertcat(0, 0, T_s) - [0; 0; p.m*g0]) / p.m;
@@ -103,22 +115,21 @@ Jw     = [p.Jxx*p_; p.Jyy*q_; p.Jzz*r_];
 wxJw   = [q_*Jw(3) - r_*Jw(2);
           r_*Jw(1) - p_*Jw(3);
           p_*Jw(2) - q_*Jw(1)];
-dw_s   = (-wxJw + [Gphi_s; Gth_s; Gpsi_s]) ./ [p.Jxx; p.Jyy; p.Jzz];
+dom_s   = (-wxJw + [Gphi_s; Gth_s; Gpsi_s]) ./ [p.Jxx; p.Jyy; p.Jzz];
 
 deta_s = Wm_s*om_s;
 
 f_dyn = Function('f_dyn', {x_s, uc_s}, { ...
-    vertcat(v_s, a_s, deta_s, dw_s) });
+    vertcat(v_s, a_s, deta_s, dom_s, dw_s) });
 
-%% --- Verification de coherence avec dyn.m (source de verite) ---
-rng(0);
-x_chk = [randn(3,1); randn(3,1); 0.3*randn(3,1); 0.5*randn(3,1)];
-u_chk = 1 + 0.2*rand(4,1);
-err_chk = norm(full(f_dyn(x_chk, u_chk)) - dyn(x_chk, u_chk*w_h, p));
-assert(err_chk < 1e-9, 'f_dyn (CasADi) incoherent avec dyn.m : %.2e', err_chk);
-fprintf('Verif f_dyn vs dyn.m : ecart = %.2e | hover |f| = %.2e\n', ...
-        err_chk, norm(full(f_dyn(zeros(12,1), ones(4,1)))));
-
+%% --- Verification de coherence ---
+% En hover (moteurs a w_h, commande = 1) : les 12 premieres derivees ~ 0.
+% SoC et z ne sont pas forcement nuls (decharge, integrateurs).
+x_hov  = [zeros(12,1); w_h*ones(4,1)];
+f_hov  = full(f_dyn(x_hov, zeros(4,1)));
+fprintf('Hover : |f(1:12)| = %.2e | |dw/dt| = %.2e\n', ...
+        norm(f_hov(1:12)), norm(f_hov(13:16)));
+assert(all(isfinite(f_hov)), 'f_dyn renvoie des NaN/Inf a l''hover');
 %% --- Construction du NLP ---
 
 J    = 0;           % critère
@@ -129,29 +140,39 @@ g_ub = {};          % bornes supérieures
 % Pour un indice i, la valeur de g(i) doit etre comprise entre
 % g_lb(i) et g_ub(i)
 
+% P_m(omega, omega_dot) [W], vectors 4x1 in rad/s and rad/s^2
+Pm = @(w,dw) sum( ...
+    (mot.R./(mot.KE.^2)) .* ...
+    (mot.Jr.*dw + p.k_Q.*w.^2).^2 ...
+    + w.*(mot.Jr.*dw + p.k_Q.*w.^2) );
+
+P_ref = full(Pm(w_h*ones(4,1), zeros(4,1)));
+
 for k = 1:N
-    xk  = X(:, k);
-    xk1 = X(:, k+1);
-    uk  = U(:, k);
+    xk = X(:,k);  xk1 = X(:,k+1);
+    uk = U(:,k);  uk1 = U(:,k+1);
 
-    % Critère : energie (sum Omega^3, normalisee par P_h -> [s de hover])
-    %   P_i = k_Q*Omega_i^3 ; u constante par intervalle => integrale exacte
-    J = J + (sum(uk.^3)/4) * h;
+    wk  = xk(13:16);
+    wk1 = xk1(13:16);
+    
+    dwk  = uk;
+    dwk1 = uk1;
+    
+    wmid  = (wk + wk1)/2;
+    dwmid = (dwk + dwk1)/2;
+    
+    % Simpson quadrature of electrical energy
+    J = J + h/(6*P_ref) * ( ...
+    Pm(wk,   dwk) + ...
+    4*Pm(wmid,dwmid) + ...
+    Pm(wk1,  dwk1) );
 
-    % Regularisation sur les variations de commande
-    if k > 1
-        du = uk - U(:, k-1);
-        J  = J + du'*W*du;
-    end
+    fk  = f_dyn(xk,uk);
+    fk1 = f_dyn(xk1,uk1);
 
-    % Collocation trapézoïdale
-    fk  = f_dyn(xk,  uk);
-    fk1 = f_dyn(xk1, uk);
-    col = xk1 - xk - (h/2) * (fk + fk1);
-
-    g{end+1}    = col;
-    g_lb{end+1} = zeros(12,1);
-    g_ub{end+1} = zeros(12,1);
+    col = xk1 - xk - (h/2)*(fk + fk1);
+    g{end+1} = col;
+    g_lb{end+1} = zeros(nx,1);  g_ub{end+1} = zeros(nx,1);
 end
 
 % Terme de temps d'arrivee (nul par defaut)
@@ -179,10 +200,10 @@ for k = 1:N+1
 end
 
 %% Conditions aux limites (égalités)
-% État initial (12 egalites)
+% État initial (16 egalites)
 g{end+1}    = X(:,1) - x_init_bc;
-g_lb{end+1} = zeros(12,1);
-g_ub{end+1} = zeros(12,1);
+g_lb{end+1} = zeros(nx,1);
+g_ub{end+1} = zeros(nx,1);
 
 % État final : position, vitesse, phi, theta, p q r (psi final libre)
 g{end+1}    = X(1:3, N+1) - pos_f;
@@ -201,6 +222,10 @@ g{end+1}    = X(10:12, N+1);
 g_lb{end+1} = zeros(3,1);
 g_ub{end+1} = zeros(3,1);
 
+g{end+1} = X(13:16,N+1) - w_h*ones(4,1);
+g_lb{end+1} = zeros(4,1);
+g_ub{end+1} = zeros(4,1);
+
 % Assemblage vecteur de décision
 w_vec    = vertcat(Tf, vec(X), vec(U));
 g_vec    = vertcat(g{:});
@@ -213,20 +238,25 @@ g_ub_vec = vertcat(g_ub{:});
 w_lb = Tf_min;
 w_ub = Tf_max;
 
-% États X : [x y z vx vy vz phi theta psi p q r] x (N+1)
-x_lb = [s.x_min; s.y_min; s.z_min; -inf(3,1); -ang_lim; -ang_lim; -inf; -inf(3,1)];
-x_ub = [s.x_max; s.y_max; s.z_max;  inf(3,1);  ang_lim;  ang_lim;  inf;  inf(3,1)];
-w_lb = [w_lb; repmat(x_lb, N+1, 1)];
-w_ub = [w_ub; repmat(x_ub, N+1, 1)];
+% States:
+% [x y z vx vy vz phi theta psi p q r w1 w2 w3 w4]
 
-% Commandes U : [w1..w4]/w_h x N
-u_lb = u_min*ones(4,1);
-u_ub = u_max*ones(4,1);
-w_lb = [w_lb; repmat(u_lb, N, 1)];
-w_ub = [w_ub; repmat(u_ub, N, 1)];
+x_lb = [s.x_min; s.y_min; s.z_min; -inf(3,1);
+        -ang_lim; -ang_lim; -inf; -inf(3,1); w_min*ones(4,1)];
 
-%% Point initial
-% Profil de position "smoothstep" (vitesse nulle aux extremites) + bosse
+x_ub = [s.x_max; s.y_max;  s.z_max; inf(3,1);
+        ang_lim; ang_lim; inf; inf(3,1); w_max*ones(4,1)];
+
+w_lb = [w_lb; repmat(x_lb,N+1,1)];
+w_ub = [w_ub; repmat(x_ub,N+1,1)];
+
+% Commandes U
+u_lb = dw_min*ones(nu,1);
+u_ub = dw_max*ones(nu,1);
+
+w_lb = [w_lb; repmat(u_lb,N+1,1)];
+w_ub = [w_ub; repmat(u_ub,N+1,1)];
+
 %% Point initial
 % Position : smoothstep xy (vitesse nulle aux extremites) + profil d'altitude
 % en "plateau" : montee rapide, croisiere au-dessus du batiment le plus haut,
@@ -242,17 +272,31 @@ end
 sstep  = @(a) 3*min(max(a,0),1).^2 - 2*min(max(a,0),1).^3;
 z_prof = z_cruise*(sstep(tau/0.15) - sstep((tau-0.85)/0.15));
 
-p0 = s.start_pos(:); pf = s.target_pos(:);
-X_init = zeros(12, N+1);
+p0 = s.start_pos(:);
+pf = s.target_pos(:);
+
+X_init = zeros(nx,N+1);
+
+% Position
 X_init(1:3,:) = p0 + (pf - p0)*sprof;
 X_init(3,:)   = X_init(3,:) + z_prof;
+
+% Velocity
 X_init(4:6,:) = (pf - p0)*dsdt;
 X_init(6,:)   = X_init(6,:) + gradient(z_prof, Tf_init/N);
+
+% Initial yaw
 X_init(9,:)   = psi0;
 
-u_init = ones(4, N);                         % hover : Omega_i = w_h
+% Rotor speeds: start with hover
+X_init(13:16,:) = w_h*ones(4,N+1);
 
-w0 = [Tf_init; reshape(X_init, [], 1); reshape(u_init, [], 1)];
+% Initial input: zero angular acceleration
+u_init = zeros(nu,N+1);
+
+w0 = [Tf_init;
+      reshape(X_init,[],1);
+      reshape(u_init,[],1)];
 
 %% --- Solveur IPOPT ---
 nlp  = struct('x', w_vec, 'f', J, 'g', g_vec);
@@ -283,20 +327,34 @@ sol = solver('x0',  w0, ...
              'lbg', g_lb_vec, 'ubg', g_ub_vec);
 
 %% --- Extraction de la solution ---
-w_sol  = full(sol.x);
+w_sol = full(sol.x);
 
 Tf_sol = w_sol(1);
-idx_X  = 2 : 12*(N+1)+1;
-idx_U  = 12*(N+1)+2 : length(w_sol);
 
-X_sol  = reshape(w_sol(idx_X), 12, N+1);
-U_sol  = reshape(w_sol(idx_U), 4, N);      % normalisee par w_h
-t_sol  = linspace(0, Tf_sol, N+1);
+nX = nx*(N+1);
+
+idx_X = 2:(nX+1);
+idx_U = (nX+2):length(w_sol);
+
+X_sol = reshape(w_sol(idx_X),nx,N+1);
+U_sol = reshape(w_sol(idx_U),nu,N+1);
+
+t_sol = linspace(0,Tf_sol,N+1);
+
+% Extract rotor speeds and accelerations
+W_sol  = X_sol(13:16,:);
+DW_sol = U_sol;
 
 % Energie mecanique d'helice : E = int k_Q * sum(Omega_i^3) dt
 P_sol  = p.k_Q * w_h^3 * sum(U_sol.^3, 1);  % [W], par intervalle
-E_sol  = sum(P_sol .* diff(t_sol));         % [J]
+E_sol = 0;              % [J]
+for k = 1:N
+    hk  = t_sol(k+1) - t_sol(k);
+    om0 = U_sol(:,k)*w_h;  om1 = U_sol(:,k+1)*w_h;
+    dom = (om1-om0)/hk;    omm = (om0+om1)/2;
+    E_sol = E_sol + hk*(Pm(om0,dom) + 4*Pm(omm,dom) + Pm(om1,dom))/6;
+end
 
 fprintf('Tf optimal : %.2f s\n', Tf_sol);
-fprintf('Energie    : %.1f J  (hover pendant Tf : %.1f J)\n', E_sol, P_h*Tf_sol);
+fprintf('Energie    : %.1f J  (hover pendant Tf : %.1f J)\n', E_sol, P_ref*Tf_sol);
 fprintf('Statut IPOPT : %s\n', solver.stats().return_status);

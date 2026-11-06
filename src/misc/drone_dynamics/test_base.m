@@ -16,7 +16,7 @@ params = drone;
 % VITESSE HOVER ANALYTIQUE
 % ------------------------
 g      = 9.81;
-w_h = sqrt((drone.m*g) / (4*drone.k_T))
+w_h = sqrt((drone.m*g) / (4*drone.k_T));
 u_eq = [w_h; w_h; w_h; w_h];
 
 fprintf('=== PARAMÈTRES DE RÉFÉRENCE ===\n');
