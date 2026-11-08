@@ -2,7 +2,7 @@
 %  CasADi + IPOPT
 % Modele d'etat 12 etats : [x y z vx vy vz phi theta psi p q r]
 % Commandes : 4 vitesses d'helices [w1..w4], normalisees par w_hover
-% Trajectoire sans obstacle
+% Trajectoire avec obstacle
 
 %clear; clc; close all;
 import casadi.*
@@ -13,11 +13,10 @@ load("scenario.mat")          % cree par scenario_fixed.m
 s = scen;
 
 
-
 %% --- Paramètres du NLP ---
 Tf_init  = 20;    % initialisation Tf (s)
-Tf_min   = 8;     % [s]
-Tf_max   = 40;    % [s]
+Tf_min   = 8;     % [s]  (HYPOTHESE : a valider)
+Tf_max   = 40;    % [s]  (HYPOTHESE : a valider)
 N        = 100;    % nombre d'intervalles
 
 g0       = 9.81;
@@ -34,19 +33,26 @@ dw_max = 500;
 ang_lim  = deg2rad(35);              % (HYPOTHESE : a valider)
 
 % Ponderations du critere
-W    = 1e-2*eye(4);   % regularisation sur les variations de commande
+%W    = 1e-2*eye(4);   % regularisation sur les variations de commande
 c_T  = 0;             % poids du temps d'arrivee (extension "advanced") [-]
 
 % Conditions aux limites
 psi0 = 0;
 x_init_bc = [ ...
-    s.start_pos(:);
-    s.start_vel(:);
+    s.start_pos(:); 
+    s.start_vel(:); 
     0; 0; psi0;
     0; 0; 0;
     w_h*ones(4,1)];
 pos_f = s.target_pos(:);
 vel_f = s.target_vel(:);
+
+nx = 16;    % State size
+nu = 4;     % Input size
+
+% Contraintes batiments : super-ellipsoide d'exposant pair p_sq (p_sq = 8)
+% p_sq plus grand -> forme plus proche du pave, mais NLP moins bien conditionne
+p_sq = 8;
 
 %% --- Déclaration des variables symboliques CasADi ---
 
@@ -54,11 +60,11 @@ vel_f = s.target_vel(:);
 Tf = MX.sym('Tf');
 h  = Tf / N;
 
-% États : [x y z vx vy vz phi theta psi p q r]  taille 12 x (N+1)
-X  = MX.sym('X', 16, N+1);
+% États : [x y z vx vy vz phi theta psi p q r w1 w2 w3 w4]  taille 16 x (N+1)
+X  = MX.sym('X', nx, N+1);
 
 % Commandes : [w1..w4]/w_hover  taille 4 x (N+1)
-U  = MX.sym('U', 4, N+1);
+U  = MX.sym('U', nu, N+1);
 
 %% --- Fonction de dynamique ---
 % Entrée : état x (12x1), commande normalisee uc (4x1)
@@ -66,8 +72,8 @@ U  = MX.sym('U', 4, N+1);
 % Meme equations que dyn.m (sans Jr). J est diagonale : on evite J\(.)
 % avec des MX et on divise elementwise. Verification numerique plus bas.
 
-x_s   = MX.sym('x_s',  16);
-uc_s  = MX.sym('uc_s', 4); % = dw_s
+x_s   = MX.sym('x_s',  nx);
+uc_s  = MX.sym('uc_s', nu); % = dw_s
 
 v_s   = x_s(4:6);
 phi_s = x_s(7); theta_s = x_s(8); psi_s = x_s(9);
@@ -166,19 +172,38 @@ for k = 1:N
 
     col = xk1 - xk - (h/2)*(fk + fk1);
     g{end+1} = col;
-    g_lb{end+1} = zeros(16,1);  g_ub{end+1} = zeros(16,1);
+    g_lb{end+1} = zeros(nx,1);  g_ub{end+1} = zeros(nx,1);
 end
 
 % Terme de temps d'arrivee (nul par defaut)
 J = J + c_T*Tf;
 
-% (Contraintes d'obstacles : desactivees dans cette etape, scenario sans batiment)
+% Contraintes d'obstacles (batiments AABB, formulation super-ellipsoide lisse)
+% s_b(r) = ((x-xc)/ax)^p + ((y-yc)/ay)^p + (z/az)^p >= 1
+% avec ax = dx+ecart, ay = dy+ecart, az = hz+ecart  (z >= 0 : centre au sol)
+for k = 1:N+1
+    xk = X(:,k);
+    for b = 1:s.n_buildings
+        xc = s.buildings(b,1);  yc = s.buildings(b,2);
+        ax = s.buildings(b,3) + s.ecart;
+        ay = s.buildings(b,4) + s.ecart;
+        az = s.buildings(b,5) + s.ecart;
+
+        sb = (((xk(1)-xc)/ax)^2)^(p_sq/2) ...
+           + (((xk(2)-yc)/ay)^2)^(p_sq/2) ...
+           + (((xk(3)   )/az)^2)^(p_sq/2);
+
+        g{end+1}    = sb;
+        g_lb{end+1} = 1;
+        g_ub{end+1} = inf;
+    end
+end
 
 %% Conditions aux limites (égalités)
 % État initial (16 egalites)
 g{end+1}    = X(:,1) - x_init_bc;
-g_lb{end+1} = zeros(16,1);
-g_ub{end+1} = zeros(16,1);
+g_lb{end+1} = zeros(nx,1);
+g_ub{end+1} = zeros(nx,1);
 
 % État final : position, vitesse, phi, theta, p q r (psi final libre)
 g{end+1}    = X(1:3, N+1) - pos_f;
@@ -225,44 +250,49 @@ x_ub = [s.x_max; s.y_max;  s.z_max; inf(3,1);
 w_lb = [w_lb; repmat(x_lb,N+1,1)];
 w_ub = [w_ub; repmat(x_ub,N+1,1)];
 
-% Commandes U : [w1..w4]/w_h x (N+1)
-u_lb = dw_min*ones(4,1);
-u_ub = dw_max*ones(4,1);
+% Commandes U
+u_lb = dw_min*ones(nu,1);
+u_ub = dw_max*ones(nu,1);
 
 w_lb = [w_lb; repmat(u_lb,N+1,1)];
 w_ub = [w_ub; repmat(u_ub,N+1,1)];
 
-%% Initial guess
-
-tau   = linspace(0,1,N+1);
+%% Point initial
+% Position : smoothstep xy (vitesse nulle aux extremites) + profil d'altitude
+% en "plateau" : montee rapide, croisiere au-dessus du batiment le plus haut,
+% descente finale. (L'ancienne bosse z_hump*sin^2 traversait B1..B4.)
+tau   = linspace(0, 1, N+1);
 sprof = 3*tau.^2 - 2*tau.^3;
-dsdt  = (6*tau - 6*tau.^2)/Tf_init;
+dsdt  = (6*tau - 6*tau.^2) / Tf_init;
 
-z_hump = 5;
+z_cruise = max(s.buildings(:,5)) + 2*s.ecart;   % [m] ici 17 m < z_max = 30
+if z_cruise >= s.z_max
+    error('z_cruise (%.1f m) >= z_max (%.1f m)', z_cruise, s.z_max);
+end
+sstep  = @(a) 3*min(max(a,0),1).^2 - 2*min(max(a,0),1).^3;
+z_prof = z_cruise*(sstep(tau/0.15) - sstep((tau-0.85)/0.15));
 
 p0 = s.start_pos(:);
 pf = s.target_pos(:);
 
-% 16 states instead of 12
-X_init = zeros(16,N+1);
+X_init = zeros(nx,N+1);
 
 % Position
-X_init(1:3,:) = p0 + (pf-p0)*sprof;
-X_init(3,:) = X_init(3,:) + z_hump*sin(pi*tau).^2;
+X_init(1:3,:) = p0 + (pf - p0)*sprof;
+X_init(3,:)   = X_init(3,:) + z_prof;
 
 % Velocity
-X_init(4:6,:) = (pf-p0)*dsdt;
-X_init(6,:) = X_init(6,:) + ...
-    z_hump*pi*sin(2*pi*tau)/Tf_init;
+X_init(4:6,:) = (pf - p0)*dsdt;
+X_init(6,:)   = X_init(6,:) + gradient(z_prof, Tf_init/N);
 
 % Initial yaw
-X_init(9,:) = psi0;
+X_init(9,:)   = psi0;
 
 % Rotor speeds: start with hover
 X_init(13:16,:) = w_h*ones(4,N+1);
 
 % Initial input: zero angular acceleration
-u_init = zeros(4,N+1);
+u_init = zeros(nu,N+1);
 
 w0 = [Tf_init;
       reshape(X_init,[],1);
@@ -286,7 +316,7 @@ opts.ipopt.linear_solver        = 'mumps';    % remplacer par 'ma57' si HSL disp
 opts.ipopt.mumps_pivtol         = 1e-4;
 
 % Hessien exact par défaut (AD CasADi). NLP ici : 1 + 12(N+1) + 4N variables.
-% opts.ipopt.hessian_approximation = 'limited-memory';
+opts.ipopt.hessian_approximation = 'limited-memory';
 
 opts.ipopt.print_level          = 5;
 
@@ -301,13 +331,13 @@ w_sol = full(sol.x);
 
 Tf_sol = w_sol(1);
 
-nX = 16*(N+1);
+nX = nx*(N+1);
 
 idx_X = 2:(nX+1);
 idx_U = (nX+2):length(w_sol);
 
-X_sol = reshape(w_sol(idx_X),16,N+1);
-U_sol = reshape(w_sol(idx_U),4,N+1);
+X_sol = reshape(w_sol(idx_X),nx,N+1);
+U_sol = reshape(w_sol(idx_U),nu,N+1);
 
 t_sol = linspace(0,Tf_sol,N+1);
 
@@ -316,11 +346,11 @@ W_sol  = X_sol(13:16,:);
 DW_sol = U_sol;
 
 % Energie mecanique d'helice : E = int k_Q * sum(Omega_i^3) dt
-P_sol  = p.k_Q * w_h^3 * sum(U_sol.^3, 1);  % [W], par intervalle
+P_sol  = p.k_Q * w_h^3 * sum(X_sol(13:16).^3, 1);  % [W], par intervalle
 E_sol = 0;              % [J]
 for k = 1:N
     hk  = t_sol(k+1) - t_sol(k);
-    om0 = U_sol(:,k)*w_h;  om1 = U_sol(:,k+1)*w_h;
+    om0 = U_sol(:,k)*w_h;  om1 = X_sol(13:16,k+1);
     dom = (om1-om0)/hk;    omm = (om0+om1)/2;
     E_sol = E_sol + hk*(Pm(om0,dom) + 4*Pm(omm,dom) + Pm(om1,dom))/6;
 end
