@@ -85,7 +85,7 @@ prob.Constraints.rot_f  = (X(13:16,N+1) == w_h*ones(4,1));
 tau   = linspace(0,1,N+1);
 sprof = 3*tau.^2 - 2*tau.^3;
 dsdt  = (6*tau - 6*tau.^2)/Tf_init;
-z_hump = 5;
+z_hump = 0;
 p0 = s.start_pos(:);  pf = s.target_pos(:);
 
 X_init = zeros(nx,N+1);
@@ -100,30 +100,61 @@ x0.Tf = Tf_init;
 x0.X  = X_init;
 x0.U  = zeros(nu,N+1);
 
+%% Problem to structure
+
+genDir = fullfile(pwd,'generated_fmincon');
+
+if ~exist(genDir,'dir')
+    mkdir(genDir);
+end
+
+solverProb = prob2struct(prob, x0, ...
+    'ObjectiveDerivative',  'auto-reverse', ...
+    'ConstraintDerivative', 'auto-reverse', ...
+    'FileLocation', genDir, ...
+    'ObjectiveFunctionName', 'fmincon_objective', ...
+    'ConstraintFunctionName', 'fmincon_constraints');
 %% --- Options fmincon ---
 % Pour un test rapide de la chaine AD : MaxIterations = 3.
 options = optimoptions('fmincon', ...
-    'Algorithm',              'interior-point', ...
-    'MaxIterations',          3, ... % 2000, ...
-    'MaxFunctionEvaluations', 1e7, ...
-    'OptimalityTolerance',    1e-5, ...
-    'ConstraintTolerance',    1e-5, ...
-    'Display',                'iter');
+    'Algorithm',                'interior-point', ...
+    'HessianApproximation',     'lbfgs', ...
+    'SpecifyObjectiveGradient', true, ...
+    'SpecifyConstraintGradient',true, ...
+    'ScaleProblem',             true, ...
+    'MaxIterations',            2000, ...
+    'MaxFunctionEvaluations',   1e7, ...
+    'OptimalityTolerance',      1e-5, ...
+    'ConstraintTolerance',      1e-5, ...
+    'Display',                  'iter');
+
+solverProb.options = options;
 % Hessienne : approximation par defaut de fmincon. Variante a comparer :
 % options.HessianApproximation = 'lbfgs';
 
 %% --- Resolution ---
-[sol, fval, exitflag, output] = solve(prob, x0, 'Options', options);
+%[sol, fval, exitflag, output] = solve(prob, x0, 'Options', options);
 
 % Verification que les derivees ne sont PAS en differences finies :
-fprintf('Derivee objectif    : %s\n', string(output.objectivederivative));
-fprintf('Derivee contraintes : %s\n', string(output.constraintderivative));
+%fprintf('Derivee objectif    : %s\n', string(output.objectivederivative));
+%fprintf('Derivee contraintes : %s\n', string(output.constraintderivative));
+
+[z_sol, fval, exitflag, output, lambda, grad, hessian] = ...
+    fmincon(solverProb);
 
 %% --- Extraction (memes noms que nlp_solv2.m, pour reutiliser nlp_simu2.m) ---
-Tf_sol = sol.Tf;
-X_sol  = sol.X;                         % 16 x (N+1)
-U_sol  = sol.U;                         % 4 x (N+1), accelerations [rad/s^2]
+%Tf_sol = sol.Tf;
+%X_sol  = sol.X;                         % 16 x (N+1)
+%U_sol  = sol.U;                         % 4 x (N+1), accelerations [rad/s^2]
+
+idx = varindex(prob);
+
+Tf_sol = z_sol(idx.Tf);
+X_sol  = reshape(z_sol(idx.X), nx, N+1);
+U_sol  = reshape(z_sol(idx.U), nu, N+1);
+
 t_sol  = linspace(0, Tf_sol, N+1);
+
 
 % Energie electrique [J] (U_sol = accelerations, vitesses dans X_sol(13:16,:))
 Wn  = X_sol(13:16,:);
@@ -137,7 +168,7 @@ fprintf('Energie    : %.1f J  (hover pendant Tf : %.1f J)\n', E_sol, P_ref*Tf_so
 fprintf('exitflag = %d | iterations = %d | viol. contraintes = %.2e\n', ...
         exitflag, output.iterations, output.constrviolation);
 
-save('sol_fmincon.mat', 'X_sol', 'U_sol', 't_sol', 'Tf_sol');
+%save('sol_fmincon.mat', 'X_sol', 'U_sol', 't_sol', 'Tf_sol');
 
 %% ======================= Fonctions locales =======================
 
