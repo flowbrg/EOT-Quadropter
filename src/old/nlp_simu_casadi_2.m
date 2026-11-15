@@ -1,21 +1,14 @@
-%% Calcul de trajectoire ideale a priori
-% Trajectoire sans obstacle
-% CasADi + IPOPT
+%% Simulation de la trajectoire ideale a priori
+% Trajectoire avec obstacles
+% Optimisation : MATLAB fmincon (nlp_solv_fmincon_2.m)
+% Simulation   : modele complet 21 etats
 
 clear; clc; close all;
 
-load("./sols/casadi_sol.mat");
-load("data/params.mat");
-load("data/scenario.mat");
+load("./sols/sol_casadi_2.mat");   % X_sol, U_sol, t_sol, Tf_sol, E_sol
+load("./data/params.mat");          % Doit definir drone, mot et batt
+load("./data/scenario.mat");        % Definit scen
 addpath("./model");
-
-%% Simulation sur le modele complet (21 etats)
-
-options_real = odeset('RelTol',1e-8,'AbsTol',1e-10);
-
-% Optimised rotor speeds: physical rad/s
-% IMPORTANT: U_sol now contains angular accelerations, not rotor speeds.
-W_ref = X_sol(13:16,:);
 
 % Nombre d'intervalles
 N = size(X_sol,2)-1;
@@ -25,30 +18,59 @@ w_h   = drone.w_h;
 w_min = 0.1*w_h;
 w_max = 1.8*w_h;
 
-% Temps de simulation
-t_sol = linspace(0,Tf_sol,N+1);
+% Verification des dimensions
+assert(size(X_sol,1)==16, 'X_sol doit contenir 16 etats.');
+assert(size(U_sol,1)==4,  'U_sol doit contenir 4 commandes.');
+assert(size(X_sol,2)==numel(t_sol), 'Dimensions incompatibles entre X_sol et t_sol.');
+assert(exist('batt','var')==1, 'La variable batt est absente. Charger les parametres batterie.');
 
-% Initial battery state
-SoC0 = 1.0;               % Same initial SoC as previous simulation
-z0   = zeros(4,1);        % Controller integrator states
+t_sol = t_sol(:);
 
-% Full model state:
-% [mechanical states(12); rotor speeds(4); SoC; controller states(4)]
+fprintf('\n========================================\n');
+fprintf('  SIMULATION TRAJECTOIRE FMINCON (OBSTACLES)\n');
+fprintf('========================================\n');
+
+fprintf('Temps final       : %.3f s\n',Tf_sol);
+fprintf('Nombre intervalles: %d\n',N);
+if exist('E_sol','var')
+    fprintf('Energie NLP       : %.1f J\n',E_sol);
+end
+
+%% Simulation sur le modele complet (21 etats)
+
+options_real = odeset('RelTol',1e-8,'AbsTol',1e-10);
+
+% X_sol(13:16,:) : vitesses des rotors [rad/s] (consigne)
+% U_sol          : accelerations angulaires [rad/s^2]
+W_ref = X_sol(13:16,:);
+
+SoC0 = 1.0;
+z0   = zeros(4,1);
+
+% Etat complet : [etats meca (12); rotors (4); SoC; etats controleur (4)]
 x_c = [X_sol(:,1); SoC0; z0];
-
-assert(numel(x_c)==21,'Initial state must contain 21 elements.');
+assert(numel(x_c)==21, 'L''etat initial doit contenir 21 elements.');
 
 t_real = t_sol(1);
 x_real = x_c.';
 
+t_parts = cell(N,1);
+x_parts = cell(N,1);
+
 for k = 1:N
-    u_k = W_ref(:,k);       % [rad/s] 4x1
-    [t_k, x_k] = ode45(@(t,x) dyn_uav(x, u_k, drone, batt, mot), ...
-                       [t_sol(k) t_sol(k+1)], x_c, options_real);
-    t_real = [t_real; t_k(2:end)];
-    x_real = [x_real; x_k(2:end,:)];
-    x_c    = x_k(end,:).';
+    u_k = W_ref(:,k);
+
+    [t_k,x_k] = ode45( ...
+        @(t,x) dyn_uav(x,u_k,drone,batt,mot), ...
+        [t_sol(k) t_sol(k+1)], x_c, options_real);
+
+    t_parts{k} = t_k(2:end);
+    x_parts{k} = x_k(2:end,:);
+    x_c = x_k(end,:).';
 end
+
+t_real = [t_real; vertcat(t_parts{:})];
+x_real = [x_real; vertcat(x_parts{:})];
 
 %% Terminal errors
 

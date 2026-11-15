@@ -52,7 +52,7 @@ nu = 4;     % Input size
 
 % Contraintes batiments : super-ellipsoide d'exposant pair p_sq (p_sq = 8)
 % p_sq plus grand -> forme plus proche du pave, mais NLP moins bien conditionne
-p_sq = 8;
+p_sq = 4;
 
 %% --- Déclaration des variables symboliques CasADi ---
 
@@ -360,5 +360,4 @@ fprintf('Tf optimal : %.2f s\n', Tf_sol);
 fprintf('Energie    : %.1f J  (hover pendant Tf : %.1f J)\n', E_sol, P_ref*Tf_sol);
 fprintf('Statut IPOPT : %s\n', solver.stats().return_status);
 
-save("./sols/casadi_sol_2.mat", "X_sol", "U_sol", ...
-    "P_sol","E_sol", "W_sol", "Tf_sol");
+save("./sols/sol_casadi_2.mat", 'X_sol', 'U_sol', 't_sol', 'Tf_sol');

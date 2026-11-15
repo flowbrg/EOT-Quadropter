@@ -4,13 +4,13 @@
 %  Modele d'etat 16 etats : [x y z vx vy vz phi theta psi p q r w1 w2 w3 w4]
 %  Commandes              : U = [dw1..dw4]  accelerations angulaires [rad/s^2]
 %
-%  Equivalent de nlp_solv2.m (CasADi/IPOPT), sans la partie batiments.
+%  Equivalent de nlp_solv_casadi.m (CasADi/IPOPT), sans la partie batiments.
 %  Prerequis : Optimization Toolbox ; params.mat (drone, mot) ; scenario.mat (scen).
 %
 %  Derivees :
-%   - gradient de l'objectif et Jacobiennes des contraintes : differentiation
-%     automatique (AD) de solve, tant que TOUT le code reste en operations supportees.
-%   - Hessienne : PAS d'AD en problem-based. fmincon utilise son approximation par defaut.
+%   - gradient de l'objectif et Jacobiennes des contraintes : AD (auto-reverse)
+%     via prob2struct, tant que TOUT le code reste en operations supportees.
+%   - Hessienne : L-BFGS (interior-point).
 
 clear; clc; close all;
 

@@ -7,9 +7,7 @@
 import casadi.*
 
 load("./data/params.mat")
-p = drone;
 load("./data/scenario.mat")          % cree par scenario_fixed.m
-s = scen;
 
 
 
@@ -39,13 +37,13 @@ c_T  = 0;             % poids du temps d'arrivee (extension "advanced") [-]
 % Conditions aux limites
 psi0 = 0;
 x_init_bc = [ ...
-    s.start_pos(:);
-    s.start_vel(:);
+    scen.start_pos(:);
+    scen.start_vel(:);
     0; 0; psi0;
     0; 0; 0;
     w_h*ones(4,1)];
-pos_f = s.target_pos(:);
-vel_f = s.target_vel(:);
+pos_f = scen.target_pos(:);
+vel_f = scen.target_vel(:);
 
 %% --- Déclaration des variables symboliques CasADi ---
 
@@ -215,10 +213,10 @@ w_ub = Tf_max;
 % States:
 % [x y z vx vy vz phi theta psi p q r w1 w2 w3 w4]
 
-x_lb = [s.x_min; s.y_min; s.z_min; -inf(3,1);
+x_lb = [scen.x_min; scen.y_min; scen.z_min; -inf(3,1);
         -ang_lim; -ang_lim; -inf; -inf(3,1); w_min*ones(4,1)];
 
-x_ub = [s.x_max; s.y_max;  s.z_max; inf(3,1);
+x_ub = [scen.x_max; scen.y_max;  scen.z_max; inf(3,1);
         ang_lim; ang_lim; inf; inf(3,1); w_max*ones(4,1)];
 
 w_lb = [w_lb; repmat(x_lb,N+1,1)];
@@ -239,8 +237,8 @@ dsdt  = (6*tau - 6*tau.^2)/Tf_init;
 
 z_hump = 5;
 
-p0 = s.start_pos(:);
-pf = s.target_pos(:);
+p0 = scen.start_pos(:);
+pf = scen.target_pos(:);
 
 % 16 states instead of 12
 X_init = zeros(16,N+1);
@@ -329,5 +327,4 @@ fprintf('Tf optimal : %.2f s\n', Tf_sol);
 fprintf('Energie    : %.1f J  (hover pendant Tf : %.1f J)\n', E_sol, P_ref*Tf_sol);
 fprintf('Statut IPOPT : %s\n', solver.stats().return_status);
 
-save("./sols/casadi_sol.mat", "X_sol", "U_sol", ...
-    "P_sol","E_sol", "W_sol", "Tf_sol");
+save("./sols/sol_casadi.mat", 'X_sol', 'U_sol', 't_sol', 'Tf_sol');
