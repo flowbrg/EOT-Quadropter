@@ -329,7 +329,7 @@ $$
   \text{dyn}(X_{1:12},X_{13:16})\\
   U
 \end{bmatrix}
-$$
+$$ \
 
 `dyn_vec.m`
 
