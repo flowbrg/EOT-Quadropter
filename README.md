@@ -11,12 +11,27 @@ MATLAB implementation of an optimization-based trajectory planner for a battery-
 
 The repository addresses MathWorks Challenge Project #237 (*Energy-Optimal Trajectory Planning for Multirotor Drones*) and is inspired by Schacht-Rodriguez et al. (2018), *Path planning generation algorithm for a class of UAV multirotor based on state of health of lithium polymer battery*, J. Intell. Robot. Syst. 91(1), 115-131 (`references/`).
 
+## 1. Requirements
 
-## 1. Overview
+- Optimization ToolBox
+- Symbolic Math Toolbox
+- CasADi (not necessary to use `src/main.m` or `docs/main.mlx`)
+
+
+## 2. Start
 
 > **Scope.** Open-loop trajectory generation by direct collocation, solved as a nonlinear program (NLP) with a free final time $T_f$. The battery is a static Thevenin model (no thermal model, no state-of-health model).
 
-The NLP uses a 16-state model $[x\ y\ z\ v_x\ v_y\ v_z\ \phi\ \theta\ \psi\ p\ q\ r\ \omega_1\ldots\omega_4]$ with the rotor accelerations $\dot\omega_i$ as inputs, discretized on $N$ intervals (`nlp.N`, set in `src/init_params.m`). The full derivation (dynamics, motor, battery, energy criterion, collocation, Hessian) is in `notebook/`; this README does not repeat it.
+The NLP uses a 16-state model $[x\ y\ z\ v_x\ v_y\ v_z\ \phi\ \theta\ \psi\ p\ q\ r\ \omega_1\ldots\omega_4]$ with the rotor accelerations $\dot\omega_i$ as inputs, discretized on $N$ intervals (`nlp.N`, set in `src/init_params.m`). The full derivation (dynamics, motor, battery, energy criterion, collocation, Hessian) is in `docs/`.
+You can review this repo by simply running the `main.mlx` file under `docs/`. \
+If you wish to get more insights on the project, you can run `src/main.m`, which it self only runs `gen_hess_loc.m`, `nlp_solv_fmincon_2.m` and `plot_nlp_2.m`.
+
+Example of a trajectory with obstacles:
+<center>
+<img src="./figures/plot_trajectory.jpg"  width=500 />
+</center>
+
+## 3. Overview
 
 Four solver scripts are provided:
 
@@ -56,6 +71,3 @@ Four solver scripts are provided:
     ├── sols/                   Saved solutions (sol_fmincon, sol_fmincon_2, sol_casadi, sol_casadi_2 .mat)
     └── misc/                   Early separate models and Simulink tests (battery, bldcm, drone_dynamics, uav_simulink), kept for reference
 ```
-<center>
-<img src="./figures/plot_trajectory.jpg"  width=500 />
-</center>
