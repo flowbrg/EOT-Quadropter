@@ -51,8 +51,7 @@ Four solver scripts are provided:
 ├── figures/                    Figures (.jpg) and their draw.io sources (figures/src/)
 ├── docs/                       Complete notebook: equations, models, trajectory-solving details
 │   ├── main.mlx / main.pdf     Notebook and its PDF export
-│   ├── main_script.m           Script version (fmincon, exact Hessian)
-│   └── fmincon_objective.m, fmincon_constraints.m, hess_loc.m   Auxiliary files used by the notebook
+│   ├── data/                   fmincon_objective.m, fmincon_constraints.m, hess_loc.m   Auxiliary files used by the notebook
 └── src/                        All the code
     ├── init_params.m           Creates data/params.mat: UAV, motor, battery and NLP parameters (e.g. nlp.N)
     ├── init_scenario.m         Creates data/scenario.mat: obstacles, target, initial point (shared by all runs)
