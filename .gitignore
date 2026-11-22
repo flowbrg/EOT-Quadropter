@@ -3,4 +3,4 @@
 *.slxc
 slprj/
 .$*
-generated_fmincon*
+generated_fmincon

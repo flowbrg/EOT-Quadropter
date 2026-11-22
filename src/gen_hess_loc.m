@@ -52,7 +52,7 @@ fprintf('Symbolic Hessian calculated in %.1f s\n', toc);
 
 tic
 matlabFunction(Hloc, 'File', 'model/hess_loc', 'Vars', {zl, lam}, 'Optimize', true);
-fprintf('data/generated_fmincon/hess_loc.m genere en %.1f s\n', toc);
+fprintf('model/hess_loc.m genere en %.1f s\n', toc);
 rehash; clear hess_loc
 
 save('data/generated_fmincon/hess_loc_meta.mat', 'N', 'g0', 'P_ref', 'drone', 'mot');
