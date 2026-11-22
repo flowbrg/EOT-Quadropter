@@ -330,6 +330,7 @@ $$
   U
 \end{bmatrix}
 $$
+
 `dyn_vec.m`
 
 Decision vector $z=[T_f;\ \mathrm{vec}(X);\ \mathrm{vec}(U)]\in\mathbb R^{n_z}$ with $X\in\mathbb R^{16\times(N+1)}$, $U\in\mathbb R^{4\times(N+1)}$ and $n_z=1+20(N+1)$ (2021 for $N=100$, 1221 for $N=60$).
