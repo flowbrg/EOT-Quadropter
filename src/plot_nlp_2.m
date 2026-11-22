@@ -5,9 +5,9 @@
 clear; clc; close all;
 
 % Optimisation : MATLAB fmincon (nlp_solv_fmincon_2.m)
-%load("./sols/sol_fmincon_2.mat");  % X_sol, U_sol, t_sol, Tf_sol
+load("./sols/sol_fmincon_2.mat");  % X_sol, U_sol, t_sol, Tf_sol
 % Optimisation : CasADi + IPOPT (nlp_solv_casadi_2.m)
-load("./sols/sol_casadi_2.mat");    % X_sol, U_sol, t_sol, Tf_sol
+%load("./sols/sol_casadi_2.mat");    % X_sol, U_sol, t_sol, Tf_sol
 load("./data/params.mat");          % Doit definir drone, mot et batt
 load("./data/scenario.mat");        % Definit scen
 addpath("./model");

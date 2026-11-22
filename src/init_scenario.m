@@ -27,6 +27,7 @@ scen.buildings = [
     27, 40, 4, 4, 15;   % B3 — carré très haut, obstacle central (hz max)
     35, 25, 3, 6,  9;   % B4 — allongé en y,    zone médiane haute
     10, 25, 5, 5, 11;   % B5 — grand carré,     approche finale
+    25, 25, 2, 2, 5;
     ];
 
 scen.n_buildings = size(scen.buildings, 1);

@@ -10,8 +10,8 @@ clc; clear; close all;
 %   T2 — Coherence energetique : P_eq et t_vol_max
 %   T3 — Simulation libre avec LQR + tracking SoC
 
-load("params.mat")
-
+load("data/params.mat")
+addpath("model");
 
 % PARAMÈTRES BATTERIE (LiPo 3S, 1300 mAh)
 SoC_0   = 1.0;          % Batterie pleine au depart

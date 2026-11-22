@@ -4,20 +4,18 @@
 % Commandes : 4 vitesses d'helices [w1..w4], normalisees par w_hover
 % Trajectoire avec obstacle
 
-%clear; clc; close all;
+clear; clc; close all;
 import casadi.*
 
 load("./data/params.mat")
-p = drone;
 load("./data/scenario.mat")          % cree par scenario_fixed.m
-s = scen;
-
+addpath("model/")
 
 %% --- Paramètres du NLP ---
 Tf_init  = 20;    % initialisation Tf (s)
 Tf_min   = 8;     % [s]  (HYPOTHESE : a valider)
 Tf_max   = 40;    % [s]  (HYPOTHESE : a valider)
-N        = 100;    % nombre d'intervalles
+N        = nlp.N; % nombre d'intervalles
 
 g0       = 9.81;
 w_h      = drone.w_h;   % vitesse hover analytique [rad/s]
@@ -47,8 +45,8 @@ x_init_bc = [ ...
 pos_f = s.target_pos(:);
 vel_f = s.target_vel(:);
 
-nx = 16;    % State size
-nu = 4;     % Input size
+nx = nlp.nx;    % State size
+nu = nlp.nu;    % Input size
 
 % Contraintes batiments : super-ellipsoide d'exposant pair p_sq (p_sq = 8)
 % p_sq plus grand -> forme plus proche du pave, mais NLP moins bien conditionne

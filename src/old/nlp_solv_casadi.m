@@ -1,23 +1,21 @@
 %% Optimisation de trajectoire — Quadrirotor 3D, energie minimale
-%  CasADi + IPOPT
+%  CasADi + IPOPTs
 % Modele d'etat 12 etats : [x y z vx vy vz phi theta psi p q r]
 % Trajectoire sans obstacle
 
-%clear; clc; close all;
+clear; clc; close all;
 import casadi.*
 
 load("./data/params.mat")
 load("./data/scenario.mat")          % cree par scenario_fixed.m
-
-
+addpath("model/")
 
 %% --- Paramètres du NLP ---
 Tf_init  = 20;    % initialisation Tf (s)
 Tf_min   = 8;     % [s]
 Tf_max   = 40;    % [s]
-N        = 100;    % nombre d'intervalles
+N        = nlp.N;  % nombre d'intervalles
 
-g0       = 9.81;
 w_h      = drone.w_h;   % vitesse hover analytique [rad/s]
 
 % Bornes commandes (HYPOTHESES : a valider)
@@ -81,10 +79,10 @@ cpsi = cos(psi_s);   spsi = sin(psi_s);
 
 % Poussee et couples
 w_s2  = w_s.^2;
-T_s     = p.k_T*sum(w_s2);
-Gphi_s  = p.l*p.k_T*(w_s2(4) - w_s2(2));
-Gth_s   = p.l*p.k_T*(w_s2(3) - w_s2(1));
-Gpsi_s  = p.k_Q*(w_s2(1) - w_s2(2) + w_s2(3) - w_s2(4));
+T_s     = drone.k_T*sum(w_s2);
+Gphi_s  = drone.l*drone.k_T*(w_s2(4) - w_s2(2));
+Gth_s   = drone.l*drone.k_T*(w_s2(3) - w_s2(1));
+Gpsi_s  = drone.k_Q*(w_s2(1) - w_s2(2) + w_s2(3) - w_s2(4));
 
 % Matrice de rotation corps -> inertiel (ZYX)
 R_s = [cpsi*cth,  cpsi*sth*sphi - spsi*cphi,  cpsi*sth*cphi + spsi*sphi;
@@ -98,15 +96,15 @@ Wm_s = [1, sphi*tth,  cphi*tth;
 %Wm_s = eye(3);
 
 % Translation
-a_s = (R_s*vertcat(0, 0, T_s) - [0; 0; p.m*g0]) / p.m;
+a_s = (R_s*vertcat(0, 0, T_s) - [0; 0; drone.m*g0]) / drone.m;
 
 % Rotation : J*dw = -w x (J w) + G
 p_ = om_s(1); q_ = om_s(2); r_ = om_s(3);
-Jw     = [p.Jxx*p_; p.Jyy*q_; p.Jzz*r_];
+Jw     = [drone.Jxx*p_; drone.Jyy*q_; drone.Jzz*r_];
 wxJw   = [q_*Jw(3) - r_*Jw(2);
           r_*Jw(1) - p_*Jw(3);
           p_*Jw(2) - q_*Jw(1)];
-dom_s   = (-wxJw + [Gphi_s; Gth_s; Gpsi_s]) ./ [p.Jxx; p.Jyy; p.Jzz];
+dom_s   = (-wxJw + [Gphi_s; Gth_s; Gpsi_s]) ./ [drone.Jxx; drone.Jyy; drone.Jzz];
 
 deta_s = Wm_s*om_s;
 
@@ -134,8 +132,8 @@ g_ub = {};          % bornes supérieures
 % P_m(omega, omega_dot) [W], vectors 4x1 in rad/s and rad/s^2
 Pm = @(w,dw) sum( ...
     (mot.R./(mot.KE.^2)) .* ...
-    (mot.Jr.*dw + p.k_Q.*w.^2).^2 ...
-    + w.*(mot.Jr.*dw + p.k_Q.*w.^2) );
+    (mot.Jr.*dw + drone.k_Q.*w.^2).^2 ...
+    + w.*(mot.Jr.*dw + drone.k_Q.*w.^2) );
 
 P_ref = full(Pm(w_h*ones(4,1), zeros(4,1)));
 
@@ -298,7 +296,7 @@ w_sol = full(sol.x);
 
 Tf_sol = w_sol(1);
 
-nX = 16*(N+1);
+nX = nlp.nx*(N+1);
 
 idx_X = 2:(nX+1);
 idx_U = (nX+2):length(w_sol);

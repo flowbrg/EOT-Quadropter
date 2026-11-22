@@ -15,7 +15,7 @@
 %   6) Step metrics of the motor speed vs. first-order model mot.tau_m
 
 clear; clc; close all;
-load('params.mat');                     % drone, batt, mot, xi0, w0_motor, SoC0
+load('data/params.mat');                     % drone, batt, mot, xi0, w0_motor, SoC0
 wh = drone.w_h;
 
 f1 = @(x,u) dyn(x, u, drone);                    % 12 states
