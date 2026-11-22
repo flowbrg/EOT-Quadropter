@@ -1,14 +1,13 @@
 %% compare_models.m
+%
+% This script was AI-generated using Claude Sonnet 4.6
+%
 % Comparison of dyn (mechanical only) and dyn_uav (mechanical + BLDC motors
-% + battery). Both models take the 4 motor speeds as input.
-%
-% Needs: params.mat, dyn.m, dyn_uav.m, dutycycle.m, dyn_bldcm.m,
-%        Control System Toolbox. Optimization Toolbox (fsolve) is used for
-%        trimming the controller integrators, with a simulation fallback.
-%
+% + battery). Both models take the 4 reference motor speeds as input.
+
 % Method:
 %   1) Trim at hover (U = w_h on all motors)
-%   2) Numerical linearisation of both models
+%   2) Numerical linearization of both models
 %   3) Virtual inputs (collective, roll, pitch, yaw) via a mixing matrix
 %   4) Frequency analysis: Bode, Nyquist, singular values, poles
 %   5) Nonlinear time simulations: step and pulse, with linear overlay
@@ -16,6 +15,7 @@
 
 clear; clc; close all;
 load('data/params.mat');                     % drone, batt, mot, xi0, w0_motor, SoC0
+addpath('model')
 wh = drone.w_h;
 
 f1 = @(x,u) dyn(x, u, drone);                    % 12 states
@@ -42,7 +42,7 @@ x2h(18:21) = z0;
 d = f2(x2h,u0);
 fprintf('Trim residual |dw| = %.3e rad/s^2, |dz| = %.3e\n', norm(d(13:16)), norm(d(18:21)));
 
-%% 2) Linearisation ------------------------------------------------------
+%% 2) Linearization ------------------------------------------------------
 [A1,B1] = jac(f1, x1h, u0);
 [A2,B2] = jac(f2, x2h, u0);
 

@@ -480,7 +480,7 @@ I_{BLDCM,i} &= \bar{i}_i \cdot D_{C,i}
 Where $V_{term}$ Is the voltage output of the battery, and $I_{BLDCM,i}$ is the current of the $i^{th}$ motor.
 
 
-The duty-cycle can be determined through experimental correlations, however, we chose to make a simple feedforward function $D_{c,i}=f(\omega_{i,ref})$ using the electrical and mecanical equations above in steady state.
+The duty-cycle can be determined through experimental correlations, however, we chose to make a simple feedforward function $D_{c,i}=f(\omega_{i,ref})$ using the electrical and mechanical equations above in steady state.
 
 ### First feedforward approach
 

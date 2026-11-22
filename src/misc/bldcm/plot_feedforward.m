@@ -3,7 +3,7 @@
 
 clear; clc; close all;
 
-load("params.mat");
+init_params
 
 N = 1000;
 
