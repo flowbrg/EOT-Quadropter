@@ -20,8 +20,6 @@ The repository addresses MathWorks Challenge Project #237 (*Energy-Optimal Traje
 
 ## 2. Start
 
-> **Scope.** Open-loop trajectory generation by direct collocation, solved as a nonlinear program (NLP) with a free final time $T_f$. The battery is a static Thevenin model (no thermal model, no state-of-health model).
-
 The NLP uses a 16-state model $[x\ y\ z\ v_x\ v_y\ v_z\ \phi\ \theta\ \psi\ p\ q\ r\ \omega_1\ldots\omega_4]$ with the rotor accelerations $\dot\omega_i$ as inputs, discretized on $N$ intervals (`nlp.N`, set in `src/init_params.m`).
 The full derivation (dynamics, motor, battery, energy criterion, collocation, Hessian) is in `docs/`.
 
