@@ -33,7 +33,7 @@ nlp.P_ref = Pm_rows(drone.w_h*ones(4,1), zeros(4,1), drone, mot);   % [W], hover
 
 % Initial states
 xi0 = [0;0;0];                  % Initial position
-w0_motor = mot.w_h.*ones(4,1);  % Initial rotor speeds
+w0_motor = drone.w_h.*ones(4,1);  % Initial rotor speeds
 SoC0 = 1;                       % Initial state of charge
 g0 = 9.81;                      % Acceleration due to gravity
 
