@@ -13,11 +13,6 @@
 % The global Hessian is the SUM of the local blocks, which is NOT done is this function.
 % The linear term c_T*Tf has a zero Hessian.
 
-clear; clc;
-
-load("./data/params.mat")
-addpath("model/")
-
 N  = nlp.N;
 nx = nlp.nx; nu = nlp.nu;
 P_ref = nlp.P_ref;
