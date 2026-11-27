@@ -60,7 +60,7 @@ T=k_T\sum_{i=1}^4\omega_i^2,\qquad
 \Gamma=\begin{bmatrix}l\,k_T(-\omega_2^2+\omega_4^2)\\ l\,k_T(-\omega_1^2+\omega_3^2)\\ k_Q(\omega_1^2-\omega_2^2+\omega_3^2-\omega_4^2)\end{bmatrix}.
 $$
 
-Units: $k_T$ [N/(rad/s)$^2$], $k_Q$ [N·m/(rad/s)$^2$], $l$ [m]. The yaw torque corresponds to rotors 1, 3 spinning clockwise and rotors 2, 4 counter-clockwise seen from above.
+Units: $k_T$ [$N/(rad/s)^2$], $k_Q$ [$Nm/(rad/s)^2$], $l$ [m]. The yaw torque corresponds to rotors 1, 3 spinning clockwise and rotors 2, 4 counter-clockwise seen from above.
 
 ### 1.3 Neglected rotor terms (H5)
 
