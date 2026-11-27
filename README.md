@@ -43,7 +43,7 @@ Example of a trajectory with obstacles:
 The NLP uses a 16-state model $[x\ y\ z\ v_x\ v_y\ v_z\ \phi\ \theta\ \psi\ p\ q\ r\ \omega_1\ldots\omega_4]$ with the rotor accelerations $\dot\omega_i$ as inputs, discretized on $N$ intervals (`nlp.N`, set in `src/init_params.m`).
 The full derivation (dynamics, motor, battery, energy criterion, collocation, Hessian) is in `docs/`.
 
-## 2. Repository structure
+## 3. Repository structure (NEED UPDATE)
 
 ```
 .
