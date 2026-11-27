@@ -20,28 +20,28 @@ The repository addresses MathWorks Challenge Project #237 (*Energy-Optimal Traje
 
 ## 2. Start
 
-The NLP uses a 16-state model $[x\ y\ z\ v_x\ v_y\ v_z\ \phi\ \theta\ \psi\ p\ q\ r\ \omega_1\ldots\omega_4]$ with the rotor accelerations $\dot\omega_i$ as inputs, discretized on $N$ intervals (`nlp.N`, set in `src/init_params.m`).
-The full derivation (dynamics, motor, battery, energy criterion, collocation, Hessian) is in `docs/`.
-
 You can review this repo by simply running the `main.mlx` file under `docs/`.
 
-If you wish to get more insights on the project, you can run `src/main.m`, which it self only runs `gen_hess_loc.m`, `nlp_solv_fmincon_2.m` and `plot_nlp_2.m`.
+If you wish to get more insights on the project, you can run `src/main.m`. \
+You can select one of 4 different solutions:
+
+| Script | Scenario | Solver | `OBSTACLES` | `USE_CASADI` |
+|---|---|---|---|---|
+| `src/solv_fmincon.m` | Simple trajectory, no obstacles | fmincon (interior-point) | `False` | `False` |
+| `src/olv_fmincon_obs.m` | Trajectory with obstacles (buildings) | fmincon (interior-point) | `True` | `False` |
+| `src/solv_casadi.m` | Same as `solv_fmincon.m` | CasADi + IPOPT | `False` | `True` |
+| `src/solv_casadi_obs.m` | Same as `solv_fmincon_obs.m` | CasADi + IPOPT | ``True`` | ``True`` |
+
+This `src/main.m script` is written so that you do not have to rerun the solving scripts each time. Nevertheless, you can force it to rerun it everytime by setting `FORCE_RUN_SOLV` to `True`.
 
 Example of a trajectory with obstacles:
 <center>
 <img src="./figures/plot_trajectory.jpg"  width=500 />
 </center>
 
-## 3. Overview
-
-Four solver scripts are provided:
-
-| Script | Scenario | Solver | Hessian |
-|---|---|---|---|
-| `src/nlp_solv_fmincon.m` | Simple trajectory, no obstacles | `fmincon` (interior-point) | L-BFGS approximation |
-| `src/nlp_solv_fmincon_2.m` | Trajectory with obstacles (buildings) | `fmincon` (interior-point) | Exact, from symbolic local blocks (`gen_hess_loc.m`); L-BFGS selectable via `use_exact_hessian` |
-| `src/old/nlp_solv_casadi.m` | Same as `nlp_solv_fmincon.m` | CasADi + IPOPT | Handled by CasADi |
-| `src/old/nlp_solv_casadi_2.m` | Same as `nlp_solv_fmincon_2.m` | CasADi + IPOPT | Handled by CasADi |
+\
+The NLP uses a 16-state model $[x\ y\ z\ v_x\ v_y\ v_z\ \phi\ \theta\ \psi\ p\ q\ r\ \omega_1\ldots\omega_4]$ with the rotor accelerations $\dot\omega_i$ as inputs, discretized on $N$ intervals (`nlp.N`, set in `src/init_params.m`).
+The full derivation (dynamics, motor, battery, energy criterion, collocation, Hessian) is in `docs/`.
 
 ## 2. Repository structure
 
