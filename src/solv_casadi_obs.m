@@ -102,13 +102,26 @@ Wm_s = [1, sphi*tth,  cphi*tth;
 % Translation
 a_s = (R_s*vertcat(0, 0, T_s) - [0; 0; drone.m*g0]) / drone.m;
 
-% Rotation : J*dw = -w x (J w) + G
+% Rotation : J*dom = -om x (J om) + G + G_gyro
 p_ = om_s(1); q_ = om_s(2); r_ = om_s(3);
 Jw     = [drone.Jxx*p_; drone.Jyy*q_; drone.Jzz*r_];
 wxJw   = [q_*Jw(3) - r_*Jw(2);
           r_*Jw(1) - p_*Jw(3);
           p_*Jw(2) - q_*Jw(1)];
-dom_s   = (-wxJw + [Gphi_s; Gth_s; Gpsi_s]) ./ [drone.Jxx; drone.Jyy; drone.Jzz];
+
+% Vitesse nette des rotors selon z_b : wG = sum(s_i w_i), s = (-1,+1,-1,+1)
+wG_s  = -w_s(1) + w_s(2) - w_s(3) + w_s(4);
+% Acceleration correspondante (dw_s = uc_s)
+wGd_s = -uc_s(1) + uc_s(2) - uc_s(3) + uc_s(4);
+
+% Couple gyroscopique des rotors : Jr*wG*[-q; p; 0]
+Ggyro_s = drone.Jr*wG_s*vertcat(-q_, p_, 0);
+
+% Couple de reaction a l'acceleration des rotors (lacet) : -Jr*dwG/dt
+Gacc_s  = vertcat(0, 0, -drone.Jr*wGd_s);
+
+dom_s = (-wxJw + [Gphi_s; Gth_s; Gpsi_s] + Ggyro_s + Gacc_s) ./ ...
+        [drone.Jxx; drone.Jyy; drone.Jzz];
 
 deta_s = Wm_s*om_s;
 

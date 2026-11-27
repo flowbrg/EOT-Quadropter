@@ -22,6 +22,7 @@ batt.R_int   = 0.05;                   % internal resistance [Ohm]
 mot.R  = 0.1;            % winding resistance [Ohm]
 mot.KE = 0.01;           % back-EMF constant [V.s/rad]
 mot.Jr = 3.0e-5;         % rotor inertia [kg.m^2]
+drone.Jr = mot.Jr;
 mot.d  = drone.k_Q;      % propeller load coefficient
 mot.Kp = 9.4e-4;         % PI gains
 mot.Ki = 9.42e-2;

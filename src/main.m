@@ -2,8 +2,8 @@ clear; clc; close all;
 
 %% Settings
 
-USE_CASADI = false; % CasADi (requires CasADi library), else fmincon
-OBSTACLES  = false;  % Trajectory with obstacles (in init_scenario.m), else 
+USE_CASADI = true; % CasADi (requires CasADi library), else fmincon
+OBSTACLES  = true;  % Trajectory with obstacles (in init_scenario.m), else 
                     % simple trajectory
 FORCE_RUN_SOLV = false; % Force rerun the solv script
 
