@@ -1,5 +1,7 @@
 %% compare_models.m
 %
+%   MOVE TO SRC/
+%
 % This script was AI-generated using Claude Sonnet 4.6
 %
 % Comparison of dyn (mechanical only) and dyn_uav (mechanical + BLDC motors

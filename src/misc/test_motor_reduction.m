@@ -1,5 +1,7 @@
 %% test_motor_reduction.m
 %
+%   MOVE TO SRC/
+%
 % This script was AI-generated using Claude Sonnet 4.6
 %
 % Quantitative test: "mechanics-only" planner vs full motor+battery model.

@@ -1,4 +1,7 @@
 %% test_aug.m
+%
+%   MOVE TO SRC/
+%
 % Test of augmented model (dyn_uav.m)
 % Tests performed:
 %   T1 — Steady state: verification that dxdt ~= 0 (except for dSoC)

@@ -1,4 +1,7 @@
-%% visu_env.m
+%% plot_scenario.m
+%
+%   MOVE TO SRC/
+%
 %  3D visualization of the navigation environment — Quadrotor
 %  Adapted from visu_bateau_2D.m
 %  Dependencies: init_params.m, scenario_fixed.m
